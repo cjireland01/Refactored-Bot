@@ -3,6 +3,14 @@ const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
 
+process.on("unhandledRejection", (reason, promise) => {
+    console.error("Unhandled Rejection at: ", promise, " reason: ", reason);
+})
+
+process.on("uncaughtException", (err) => {
+    console.error("Uncaught Exception thrown: ", err);
+})
+
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
