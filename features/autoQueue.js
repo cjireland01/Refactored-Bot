@@ -2,7 +2,7 @@ const { EmbedBuilder } = require("discord.js");
 const path = require("path");
 const XLSX = require("xlsx");
 const { webState, getRemainingTime } = require("../server");
-const { TEXT_CHANNELS, VOICE_CHANNELS, ALT_USERS } = require("../config/constants");
+const { TEXT_CHANNELS, VOICE_CHANNELS } = require("../config/constants");
 
 // === Load Excel ===
 const workbook = XLSX.readFile(path.join(__dirname, "../data/userVehicles.xlsx"));
@@ -11,13 +11,11 @@ const data = XLSX.utils.sheet_to_json(worksheet);
 
 // === Config values ===
 const VEHICLE_POST_CHANNEL_ID = TEXT_CHANNELS.AUTOQUEUE;
-const ALT_CHANNEL_ID = TEXT_CHANNELS.ALTQUEUE;
 const VOICE_CHANNELS_IDS = Object.values(VOICE_CHANNELS);
 
 // === State ===
 let lastVehicleEmbed = null;
 let lastUserVehiclesMap = new Map();
-let lastAltTracker = null;
 
 // --- Helpers ---
 function extractNameBeforePipe(name) {
@@ -96,36 +94,6 @@ function getVehiclesForUser(userOrMember, currentBR) {
     return results;
 }
 
-function getVehiclesForAlt(username, currentBR) {
-    const brMin = parseFloat(currentBR) - 1.0;
-    const brMax = parseFloat(currentBR);
-    const result = [];
-
-    console.log(`\x1b[36m[DEBUG] Looking for user in Excel: ${username}\x1b[0m`);
-
-    data.forEach(row => {
-      const rowName = row.Username?.toString().trim().toLowerCase();
-
-      if (rowName === username.toLowerCase()) {
-          Object.entries(row).forEach(([key, value]) => {
-              const br = parseFloat(key);
-              if (!isNaN(br) && br >= brMin && br <= brMax && typeof value === "string") {
-                  const vehicles = value.split(',').map(v => v.trim());
-                  vehicles.forEach(vehicle => {
-                      result.push({ Vehicle: vehicle, BR: br.toFixed(1) });
-                  });
-              }
-          });
-      }
-  });
-
-  if (result.length === 0) {
-      console.warn(`\x1b[33m[WARNING] No vehicles found in Excel for user: ${username}\x1b[0m`);
-  }
-
-  return result;
-}
-
 function generateEmbedContent(userVehicleMap, currentBR) {
     const embed = new EmbedBuilder()
         .setTitle(`Auto Queue System - Current BR ${currentBR}`)
@@ -201,77 +169,4 @@ async function updateVoiceVehicleEmbed(client, getCurrentBRColumn) {
     }
 }
 
-function generateAltUserEmbedContent(userVehicleMap, currentBR) {
-    const embed = new EmbedBuilder()
-        .setTitle(`Alt Tracker - BR: ${currentBR}`)
-        .setColor("#00ff7f")
-        .setTimestamp()
-        .setFooter({ text: "Request access & verify squadron membership" });
-
-    for (const [username, vehicles] of userVehicleMap.entries()) {
-        if (!vehicles || vehicles.length === 0) continue;
-
-        const groupedVehicles = {};
-        vehicles.forEach(({ Vehicle, BR }) => {
-            if (!groupedVehicles[BR]) groupedVehicles[BR] = [];
-            groupedVehicles[BR].push(Vehicle);
-        });
-
-        const sortedBRs = Object.keys(groupedVehicles).sort((a, b) => parseFloat(b) - parseFloat(a));
-        let formatted = sortedBRs.map(br => `${br} - ${groupedVehicles[br].join(", ")}`).join("\n");
-
-        if (formatted.length > 1000) {
-            formatted = formatted.slice(0, 997) + "...";
-            formatted += "\n+ some not shown";
-        }
-
-        embed.addFields({
-            name: username,
-            value: formatted,
-            inline: false
-        });
-    }
-
-    return embed;
-}
-
-
-async function updateAltTrackerEmbed(client, getCurrentBRColumn) {
-  try {
-      const currentBR = getCurrentBRColumn();
-      console.log(`\x1b[36m[DEBUG] Current BR for ALT Tracker: ${currentBR}\x1b[0m`);
-      
-      const userVehicleMap = new Map();
-
-      ALT_USERS.forEach(username => {
-          const userVehicles = getVehiclesForAlt(username, currentBR);
-          
-          if (userVehicles.length > 0) {
-              console.log(`\x1b[32m[DEBUG] User: ${username} - Vehicles Found: ${JSON.stringify(userVehicles)}\x1b[0m`);
-          } else {
-              console.warn(`\x1b[33m[WARNING] No vehicles found for user: ${username}\x1b[0m`);
-          }
-          
-          userVehicleMap.set(username, userVehicles);
-      });
-
-      if (userVehicleMap.size === 0) {
-          console.warn("\x1b[33m[WARNING] No vehicles found for any of the ALT users.\x1b[0m");
-      }
-
-      const targetChannel = await client.channels.fetch(ALT_CHANNEL_ID);
-      const embed = generateAltUserEmbedContent(userVehicleMap, currentBR);
-
-      if (lastAltTracker) {
-          await lastAltTracker.edit({ embeds: [embed] });
-      } else {
-          lastAltTracker = await targetChannel.send({ embeds: [embed] });
-      }
-
-  } catch (err) {
-      console.error("[ERROR] Error updating username vehicle embed:", err.message);
-  }
-}
-
-
-module.exports = { updateVoiceVehicleEmbed, updateAltTrackerEmbed };
+module.exports = { updateVoiceVehicleEmbed };

@@ -1,4 +1,5 @@
-const { updateVoiceVehicleEmbed, updateAltTrackerEmbed } = require("../features/autoQueue");
+const { updateVoiceVehicleEmbed } = require("../features/autoQueue");
+const { updateAltTrackerEmbed } = require("../features/altQueue");
 
 function getCurrentBRColumn() {
     const schedule = [
