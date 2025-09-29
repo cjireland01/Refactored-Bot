@@ -1,0 +1,511 @@
+{
+  "pos": 15,
+  "_id": 1125864,
+  "announcement": "New Small Active Community. Find us on discord! 16+\n\nWe have a grind squadron for the community as well VCXM! feel free to check both squads out to join the community!",
+  "autoaccept": false,
+  "cdate": {
+    "$date": 1740788570483
+  },
+  "changed_by_uid": 160835871,
+  "changed_time": {
+    "$date": 1755622466807
+  },
+  "clanBestRewards": [
+    {
+      "seasonName": "seasonId54_till50",
+      "title": "top50@historical"
+    },
+    {
+      "seasonName": "seasonId53_till50",
+      "title": "top50@historical"
+    },
+    {
+      "seasonName": "seasonId55_till20",
+      "title": "top20@historical"
+    }
+  ],
+  "clanRewardLog": {
+    "seasonId53_till50": {
+      "t": {
+        "$date": 1746057600000
+      },
+      "seasonId": 53,
+      "seasonStartTimestamp": {
+        "$date": 1740787200000
+      },
+      "seasonEndTimestamp": {
+        "$date": 1746057599000
+      },
+      "numInYear": 1,
+      "titles": [
+        "top50@historical"
+      ]
+    },
+    "seasonId54_till50": {
+      "t": {
+        "$date": 1751328000000
+      },
+      "seasonId": 54,
+      "seasonStartTimestamp": {
+        "$date": 1746057600000
+      },
+      "seasonEndTimestamp": {
+        "$date": 1751327999000
+      },
+      "numInYear": 2,
+      "titles": [
+        "top50@historical"
+      ]
+    },
+    "seasonId55_till20": {
+      "t": {
+        "$date": 1756684800000
+      },
+      "seasonId": 55,
+      "seasonStartTimestamp": {
+        "$date": 1751328000000
+      },
+      "seasonEndTimestamp": {
+        "$date": 1756684799000
+      },
+      "numInYear": 3,
+      "titles": [
+        "top20@historical"
+      ]
+    }
+  },
+  "clanSeasonRatingRewards": {
+    "t": {
+      "$date": 1759017600000
+    },
+    "seasonId": 56,
+    "seasonStartTimestamp": {
+      "$date": 1756684800000
+    },
+    "seasonEndTimestamp": {
+      "$date": 1761955199000
+    },
+    "numInYear": 4,
+    "regaliaTags": [
+      "common"
+    ]
+  },
+  "clanSeasonRewards": {
+    "regaliaTags": [
+      "top20"
+    ],
+    "t": {
+      "$date": 1756684800000
+    },
+    "seasonId": 55,
+    "seasonStartTimestamp": {
+      "$date": 1751328000000
+    },
+    "seasonEndTimestamp": {
+      "$date": 1756684799000
+    },
+    "numInYear": 3
+  },
+  "creator_uid": 160835871,
+  "currentTagRegalia": "top20",
+  "desc": "In-Progress. Currently a SRE Training Squadron.\n(Must Apply in Discord)\nDiscord is a Requirement! (SRE is a Requirement)\nhttps://discord.gg/valiantcrew",
+  "interlockid": 9154,
+  "lastPaidTag": ".VCoM.",
+  "members_cnt": 128,
+  "membership_req": [],
+  "name": "Valiant Crew of Misfits",
+  "namel": "valiant crew of misfits",
+  "region": "NA/EU/CIS/AU",
+  "slogan": "The Emperor Protects",
+  "status": "open",
+  "tag": "╝VCoM╝",
+  "tagl": "vcom",
+  "transactions": [
+    625355263150678000,
+    2553125584294234600,
+    1644525606402582300,
+    7951866061893263000,
+    4863829241110760000,
+    5908690121043081000,
+    8633814498200081000,
+    3005550975630716000,
+    1481095889347883500,
+    3230033193194244000,
+    5762138387121471000,
+    3267245127207728600,
+    7409040371814127000,
+    1786484266500764400,
+    4196998512731308500,
+    8110991618730647000,
+    1261604966090658600,
+    7656422135822934000,
+    3809089516431006700,
+    2864876815394629600,
+    6969042167715268000,
+    2449752551015158000,
+    3882966962038708700,
+    3616705556246214700,
+    3630968770073876000,
+    7917266786149875000,
+    8770232640442109000,
+    3409306857489705500,
+    600188396721623600,
+    2448362312339161600,
+    2792301970548419600,
+    2839268146455869400,
+    1554292616985951000,
+    3023948655009381000,
+    7625441501796107000,
+    762001551166347300,
+    7101575305533594000,
+    6142906106753625000,
+    5235793286643062000,
+    3310680023659191300,
+    2814966803416871000,
+    2692385089112212000,
+    7450121686238889000,
+    2506315707807693000,
+    3245839481036342300,
+    3932935763233555500,
+    8658253798335259000,
+    7880515556805923000,
+    9094459046844929000,
+    1515163850117475600,
+    700206792993613000,
+    7279567799018882000,
+    8730456335415254000,
+    1206974948069374700,
+    5198607604115878000,
+    6829581264960267000,
+    5869838607688079000,
+    1253303204072574700,
+    4472658419529130000,
+    7557693057534235000,
+    2987090968931748400,
+    3176554004479378400,
+    5515825415021867000,
+    8342225132353435000,
+    5996451273163728000,
+    4550647732639336400,
+    7701322183090006000,
+    1493399504639690200,
+    9016949427919137000,
+    7805568752373905000,
+    6257054153027850000,
+    3693557621083514000,
+    2567225446307509000,
+    7609002655781530000,
+    760117429828208600,
+    2006445812940819200,
+    942718601767371800,
+    6762669282331545000,
+    5383567175264919000,
+    1961137922981857500,
+    3544124145425910300,
+    5970700069978717000,
+    2949983698966710300,
+    7697946371943491000,
+    1494122139456512000,
+    2447181129173577000,
+    2315449916860706300,
+    2044901646435126000,
+    2519758935667905500,
+    8761736289998599000,
+    3456722059248464000,
+    912308545689037000,
+    7062985795191071000,
+    8420529193168936000,
+    791218305384030700,
+    626866166307588600,
+    3542254366864539000,
+    6230837211023104000,
+    8656183506586947000,
+    655687786303133400
+  ],
+  "type": "normal",
+  "astat": {
+    "dr_era0_arc": 0,
+    "dr_era0_hist": 0,
+    "dr_era0_sim": 0,
+    "dr_era1_arc": 0,
+    "dr_era1_hist": 0,
+    "dr_era1_sim": 0,
+    "dr_era2_arc": 0,
+    "dr_era2_hist": 0,
+    "dr_era2_sim": 0,
+    "dr_era3_arc": 0,
+    "dr_era3_hist": 0,
+    "dr_era3_sim": 0,
+    "dr_era4_arc": 0,
+    "dr_era4_hist": 0,
+    "dr_era4_sim": 0,
+    "dr_era5_arc": 0,
+    "dr_era5_hist": 36861,
+    "dr_era5_sim": 0,
+    "dr_era6_arc": 0,
+    "dr_era6_hist": 0,
+    "dr_era6_sim": 0,
+    "dr_era7_arc": 0,
+    "dr_era7_hist": 0,
+    "dr_era7_sim": 0,
+    "dr_era8_arc": 0,
+    "dr_era8_hist": 0,
+    "dr_era8_sim": 0,
+    "dr_era9_arc": 0,
+    "dr_era9_hist": 0,
+    "dr_era9_sim": 0,
+    "deaths_hist": 13145,
+    "ftime_hist": 45426,
+    "akills_hist": 4375,
+    "gkills_hist": 8063,
+    "battles_hist": 2140,
+    "wins_hist": 969,
+    "activity": 120438,
+    "clan_activity_by_periods": 322794
+  },
+  "clanRewardRatingPerUser_56": {
+    "d20333": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20334": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20335": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20336": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20337": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20338": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20339": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20340": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20341": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20342": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20343": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20344": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20345": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20346": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20347": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20348": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20349": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20350": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20351": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20352": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20353": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20354": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20355": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20356": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20357": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20358": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    },
+    "d20359": {
+      "historical": {
+        "5": {
+          "commonTags": {
+            "rating": 1000
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>VCoM Dashboard</title>
+  <style>
+    :root {
+      --bg-color: #121212;
+      --section-color: #1e1e1e;
+      --text-color: #e0e0e0;
+      --accent-color: #ffca28;
+      --card-bg: #2a2a2a;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 1.5rem;
+    }
+
+    h1, h2 {
+      color: var(--accent-color);
+      margin: 0 0 0.5rem 0;
+    }
+
+    .section {
+      background-color: var(--section-color);
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+
+    .flex-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.1rem;
+    }
+
+    .user-block {
+      background-color: var(--card-bg);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+    }
+
+    pre {
+      background-color: #181818;
+      padding: 1rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="section">
+    <h1>VCoM Status Dashboard</h1>
+    <div class="flex-header">
+      <div>🎯 Current BR: <strong><span id="br">...</span></strong></div>
+      <div>⏳ Time Left: <strong><span id="timeLeft">...</span></strong></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>🎙️ Active Voice Users</h2>
+    <div id="users">Loading...</div>
+  </div>
+
+  <div class="section">
+    <h2>📊 VCoM Squadron Stats</h2>
+    <pre id="vcomStats">Loading...</pre>
+  </div>
+
+  <script>
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/status');
+        const data = await res.json();
+
+        document.getElementById('br').textContent = data.currentBR;
+        document.getElementById('timeLeft').textContent = data.brEndsIn;
+        document.getElementById('vcomStats').textContent = JSON.stringify(data.vcomStats, null, 2);
+
+        const usersHtml = data.voiceUsers.length === 0
+          ? "<em>No users active.</em>"
+          : data.voiceUsers.map(u => {
+              const grouped = {};
+              u.vehicles.forEach(v => {
+                if (!grouped[v.BR]) grouped[v.BR] = [];
+                grouped[v.BR].push(v.Vehicle);
+              });
+
+              const sortedBRs = Object.keys(grouped).sort((a, b) => parseFloat(b) - parseFloat(a));
+              const vehicleLines = sortedBRs.map(br => `${br} - ${grouped[br].join(', ')}`).join("<br>");
+
+              return `
+                <div class='user-block'>
+                  <div><strong>${u.name}</strong></div>
+                  <div style="padding-left: 1rem;">${vehicleLines}</div>
+                </div>`;
+            }).join("");
+
+        document.getElementById('users').innerHTML = usersHtml;
+
+      } catch (error) {
+        document.getElementById('users').innerHTML = "<p>Error fetching data.</p>";
+        document.getElementById('vcomStats').textContent = "Error loading stats.";
+      }
+    }
+
+    fetchStatus();
+    setInterval(fetchStatus, 5000);
+  </script>
+</body>
+</html>
