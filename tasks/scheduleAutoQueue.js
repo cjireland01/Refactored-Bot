@@ -32,8 +32,8 @@ module.exports = {
         client.once("clientReady", () => {
             updateAltTrackerEmbed(client, getCurrentBRColumn);
 
-            setInterval(() => updateVoiceVehicleEmbed(client, getCurrentBRColumn), 5000);
-            setInterval(() => updateAltTrackerEmbed(client, getCurrentBRColumn), (1000*60*60*24))
+            setInterval(() => updateVoiceVehicleEmbed(client, getCurrentBRColumn), 5000); // Check for updates every 5 seconds
+            setInterval(() => updateAltTrackerEmbed(client, getCurrentBRColumn), (1000*60*60*24)) // Update every 24 hours
         });
         
     }
