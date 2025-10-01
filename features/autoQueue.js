@@ -1,7 +1,9 @@
+// features/autoQueue.js
 const { EmbedBuilder } = require("discord.js");
 const { webState, getRemainingTime } = require("../server");
 const { TEXT_CHANNELS, VOICE_CHANNELS } = require("../config/constants");
 const db = require("../utils/db");
+const { normalize } = require("path");
 
 // === Config values ===
 const VEHICLE_POST_CHANNEL_ID = TEXT_CHANNELS.AUTOQUEUE;
@@ -11,6 +13,12 @@ const VOICE_CHANNEL_IDS = Object.values(VOICE_CHANNELS || {});
 let lastVehicleEmbed = null;
 let lastUserVehiclesMap = new Map();
 
+// -- Helpers --
+function normalizeDiscordName(name) {
+    if (!name) return "";
+    return name.split("|")[0].split("-")[0].trim().toLowerCase();
+}
+
 // --- Query vehicles from DB ---
 function getVehiclesForUser(userOrMember, currentBR) {
   let queryName = "";
@@ -18,9 +26,9 @@ function getVehiclesForUser(userOrMember, currentBR) {
 
   if (typeof userOrMember === "object" && userOrMember !== null) {
     queryId = userOrMember.id ? userOrMember.id.toString() : null;
-    queryName = (userOrMember.username || userOrMember.displayName || "").toLowerCase();
+    queryName = normalizeDiscordName(userOrMember.username || userOrMember.displayName || "");
   } else {
-    queryName = (userOrMember || "").toLowerCase();
+    queryName = normalizeDiscordName(userOrMember || "");
   }
 
   const brFloat = parseFloat(currentBR);
@@ -110,7 +118,9 @@ async function updateVoiceVehicleEmbed(client, getCurrentBRColumn) {
         if (member.user.bot) continue;
 
         const displayName = member.displayName ?? member.user.username;
-        const vehicles = getVehiclesForUser(displayName, currentBR);
+        const normalizedName = normalizeDiscordName(displayName);
+        const vehicles = getVehiclesForUser(normalizedName, currentBR);
+        
         userVehicleMap.set(displayName, vehicles);
       }
     }
