@@ -16,7 +16,7 @@ let lastUserVehiclesMap = new Map();
 // -- Helpers --
 function normalizeDiscordName(name) {
     if (!name) return "";
-    return name.split("|")[0].split("-")[0].trim().toLowerCase();
+    return name.split("|")[0].split("-")[0].split("@")[0].trim().toLowerCase();
 }
 
 // --- Query vehicles from DB ---
