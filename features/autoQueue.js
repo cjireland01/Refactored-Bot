@@ -3,7 +3,6 @@ const { EmbedBuilder } = require("discord.js");
 const { webState, getRemainingTime } = require("../server");
 const { TEXT_CHANNELS, VOICE_CHANNELS } = require("../config/constants");
 const db = require("../utils/db");
-const { normalize } = require("path");
 
 // === Config values ===
 const VEHICLE_POST_CHANNEL_ID = TEXT_CHANNELS.AUTOQUEUE;

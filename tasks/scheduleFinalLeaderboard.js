@@ -1,18 +1,35 @@
 const cron = require("node-cron");
 const { finalPosition } = require("../features/endingLeaderboard");
 
-module.exports = {
-    start(client) {
-        client.once("clientReady", () => {
-        // Run at 3:15 AM EST (08:15 UTC)
-        cron.schedule("15 8 * * *", () => {
-            finalPosition(client);
-        });
+// Keep job refs alive
+const jobs = [];
 
-        // Run at 6:15 PM EST (23:15 UTC)
-        cron.schedule("0 15 23 * * *", () => {
-            finalPosition(client);
-        });
+module.exports = {
+  start(client) {
+    const morningJob = cron.schedule("15 18 * * *", () => {
+      setImmediate(async () => {
+        try {
+          console.log("[CRON] Running finalPosition at 18:15 UTC (EU job)");
+          await finalPosition(client);
+        } catch (err) {
+          console.error("[CRON] Error in EU job:", err);
+        }
+      });
     });
-    }
+    jobs.push(morningJob);
+
+    const eveningJob = cron.schedule("15 3 * * *", () => {
+      setImmediate(async () => {
+        try {
+          console.log("[CRON] Running finalPosition at 03:15 UTC (NA job)");
+          await finalPosition(client);
+        } catch (err) {
+          console.error("[CRON] Error in NA job:", err);
+        }
+      });
+    });
+    jobs.push(eveningJob);
+
+    console.log("[CRON] Scheduled jobs:", jobs.length);
+  }
 };
