@@ -1,10 +1,12 @@
 import fetch from "node-fetch";
+import { fileURLToPath } from "url";
+import fs from "fs";
 import readline from "readline";
 import * as dotenv from "dotenv";
 import Database from "better-sqlite3";
 import path from "path";
 
-dotenv.config();
+dotenv.config({ path: path.resolve("/home/cireland/Refactored-Bot/.env") });
 
 // ===== CONFIGURATION =====
 const SQUAD_ID = "1125864";
@@ -21,7 +23,10 @@ const BR_STEPS = [
 ];
 
 // ===== DATABASE SETUP =====
-const dbPath = path.join(process.cwd(), "data", "botdata.db");
+const __fileName = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__fileName);
+
+const dbPath = path.join(__dirname, "..", "data", "botdata.db");
 const db = new Database(dbPath);
 
 db.exec(`
@@ -79,6 +84,11 @@ async function promptContinue(message = "Rate limit hit. Press ENTER to retry or
       resolve(ans.trim());
     });
   });
+}
+
+function normalizeUsername(name) {
+  if (!name) return "";
+  return name.replace(/@psn|@live/gi, "").trim();
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -231,13 +241,14 @@ async function main() {
 
     const results = [];
     for (const p of players) {
+      const normalizedName = normalizeUsername(p.name);
       console.log(`Processing ${p.name} (${p.id})...`);
       const makeStat = await fetchMakeStatById(p.id);
       const rows = extractVehicleRowsFromMakeStat(makeStat);
       const ownedList = buildOwnedListFromRows(rows, masterVehicles);
       const brBuckets = bucketByBR(masterVehicles, ownedList);
 
-      results.push({ id: p.id, name: p.name, brBuckets });
+      results.push({ id: p.id, name: normalizedName, brBuckets });
 
       await sleep(randomDelay(1000, 2000));
     }
