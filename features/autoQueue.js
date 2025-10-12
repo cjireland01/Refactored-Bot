@@ -1,172 +1,164 @@
+// features/autoQueue.js
 const { EmbedBuilder } = require("discord.js");
-const path = require("path");
-const XLSX = require("xlsx");
 const { webState, getRemainingTime } = require("../server");
 const { TEXT_CHANNELS, VOICE_CHANNELS } = require("../config/constants");
-
-// === Load Excel ===
-const workbook = XLSX.readFile(path.join(__dirname, "../data/userVehicles.xlsx"));
-const worksheet = workbook.Sheets["matched_vehicles"];
-const data = XLSX.utils.sheet_to_json(worksheet);
+const db = require("../utils/db");
 
 // === Config values ===
 const VEHICLE_POST_CHANNEL_ID = TEXT_CHANNELS.AUTOQUEUE;
-const VOICE_CHANNELS_IDS = Object.values(VOICE_CHANNELS);
+const VOICE_CHANNEL_IDS = Object.values(VOICE_CHANNELS || {});
 
 // === State ===
 let lastVehicleEmbed = null;
 let lastUserVehiclesMap = new Map();
 
-// --- Helpers ---
-function extractNameBeforePipe(name) {
+// -- Helpers --
+function normalizeDiscordName(name) {
     if (!name) return "";
-    return name.split("|")[0].split("-")[0].trim().toLowerCase();
+    return name.split("|")[0].split("-")[0].split("@")[0].trim().toLowerCase();
 }
 
-function normalizeNameRaw(s) {
-    if (!s && s !== 0) return "";
-    let str = s.toString();
-    str = str.replace(/\u00A0/g, " ");
-    str = str.split("|")[0].split("-")[0].trim();
-    str = str.replace(/@.*$/, "");
-    return str.toLowerCase().trim();
-}
-
-function cleanBRKey(key) {
-    if (key === undefined || key === null) return "";
-    let s = key.toString();
-    return s.replace(/[^\d.]/g, "").trim();
-}
-
-// --- Main Functions ---
-
+// --- Query vehicles from DB ---
 function getVehiclesForUser(userOrMember, currentBR) {
-    const results = [];
-    let queryId = null;
-    let queryName = "";
-    let queryDisplay = "";
+  let queryName = "";
+  let queryId = null;
 
-    if (typeof userOrMember === "object" && userOrMember !== null) {
-        queryId = userOrMember.id ? userOrMember.id.toString() : null;
-        queryName = normalizeNameRaw(userOrMember.username || "");
-        queryDisplay = normalizeNameRaw(userOrMember.displayName || userOrMember.nickname || "");
-    } else {
-        queryName = normalizeNameRaw(userOrMember || "");
-    }
+  if (typeof userOrMember === "object" && userOrMember !== null) {
+    queryId = userOrMember.id ? userOrMember.id.toString() : null;
+    queryName = normalizeDiscordName(userOrMember.username || userOrMember.displayName || "");
+  } else {
+    queryName = normalizeDiscordName(userOrMember || "");
+  }
 
-    const brFloat = parseFloat(currentBR);
-    const brMin = isNaN(brFloat) ? null : (brFloat - 1.0);
-    const brMax = isNaN(brFloat) ? null : brFloat;
+  const brFloat = parseFloat(currentBR);
+  const brMin = isNaN(brFloat) ? null : brFloat - 1.0;
+  const brMax = isNaN(brFloat) ? null : brFloat;
 
-    data.forEach(row => {
-        const rawRowName = row.Username ?? row.username ?? "";
-        const rowName = normalizeNameRaw(rawRowName);
-        const rowMemberID = row.MemberID ? String(row.MemberID).trim() : null;
+  // User query
+  let userRow = null;
+  if (queryId) {
+    userRow = db.prepare(`SELECT * FROM users WHERE member_id = ?`).get(queryId);
+  }
+  if (!userRow && queryName) {
+    userRow = db.prepare(`SELECT * FROM users WHERE LOWER(username) = ?`).get(queryName);
+  }
+  if (!userRow) return [];
 
-        let matched = false;
-        if (queryId && rowMemberID && queryId === rowMemberID) matched = true;
-        else if (rowName && queryName && rowName === queryName) matched = true;
-        else if (rowName && queryDisplay && rowName === queryDisplay) matched = true;
+  // Vehicle query & join
+  let rows;
+  if (brMin !== null && brMax !== null) {
+    rows = db.prepare(
+      `SELECT vehicle_name, br 
+       FROM vehicles 
+       WHERE user_id = ? 
+         AND br BETWEEN ? AND ?`
+    ).all(userRow.id, brMin, brMax);
+  } else {
+    rows = db.prepare(
+      `SELECT vehicle_name, br 
+       FROM vehicles 
+       WHERE user_id = ?`
+    ).all(userRow.id);
+  }
 
-        if (!matched) return;
+  return rows.map(r => ({
+    Vehicle: r.vehicle_name,
+    BR: r.br.toFixed(1),
+  }));
+}
 
-        Object.entries(row).forEach(([colKey, value]) => {
-            if (["Username", "username", "MemberID", "memberid"].includes(colKey)) return;
+// Builds embed
+function generateEmbedContent(userVehicleMap, currentBR) {
+  const embed = new EmbedBuilder()
+    .setTitle(`Auto Queue System - Current BR ${currentBR}`)
+    .setColor("#00bfff")
+    .setTimestamp()
+    .setFooter({ text: "Tracked every 5 seconds" });
 
-            const cleanKey = cleanBRKey(colKey);
-            if (!cleanKey) return;
-            const br = parseFloat(cleanKey);
-            if (isNaN(br)) return;
-            if (!value) return;
+  for (const [username, vehicles] of userVehicleMap.entries()) {
+    if (!vehicles?.length) continue;
 
-            const cellStr = String(value).trim();
-            if (!cellStr.length) return;
-
-            if (brMin !== null && brMax !== null) {
-                if (!(br >= brMin && br <= brMax)) return;
-            }
-
-            const vehicles = cellStr.split(/[,;/\|\n\r]+/).map(v => v.trim()).filter(Boolean);
-            vehicles.forEach(v => results.push({ Vehicle: v, BR: br.toFixed(1), sourceCol: colKey }));
-        });
+    const grouped = {};
+    vehicles.forEach(({ Vehicle, BR }) => {
+      if (!grouped[BR]) grouped[BR] = [];
+      grouped[BR].push(Vehicle);
     });
 
-    return results;
-}
+    const sortedBRs = Object.keys(grouped).sort((a, b) => parseFloat(b) - parseFloat(a));
+    let formatted = sortedBRs.map(br => `${br} - ${grouped[br].join(", ")}`).join("\n");
 
-function generateEmbedContent(userVehicleMap, currentBR) {
-    const embed = new EmbedBuilder()
-        .setTitle(`Auto Queue System - Current BR ${currentBR}`)
-        .setColor("#00bfff")
-        .setTimestamp()
-        .setFooter({ text: "Tracked every 5 seconds" });
-
-    for (const [username, vehicles] of userVehicleMap.entries()) {
-        if (!vehicles?.length) continue;
-
-        const grouped = {};
-        vehicles.forEach(({ Vehicle, BR }) => {
-            if (!grouped[BR]) grouped[BR] = [];
-            grouped[BR].push(Vehicle);
-        });
-
-        const sortedBRs = Object.keys(grouped).sort((a, b) => parseFloat(b) - parseFloat(a));
-        let formatted = sortedBRs.map(br => `${br} - ${grouped[br].join(", ")}`).join("\n");
-
-        if (formatted.length > 1000) {
-            formatted = formatted.slice(0, 997) + "...";
-            formatted += "\n+ some not shown";
-        }
-
-        embed.addFields({ name: username, value: formatted, inline: false });
+    if (formatted.length > 1000) {
+      formatted = formatted.slice(0, 997) + "...";
+      formatted += "\n+ some not shown";
     }
 
-    return embed;
+    embed.addFields({ name: username, value: formatted, inline: false });
+  }
+
+  return embed;
 }
 
+// Sends/edits embed
 async function updateVoiceVehicleEmbed(client, getCurrentBRColumn) {
-    try {
-        let userVehicleMap = new Map();
-        const currentBR = getCurrentBRColumn();
+  try {
+    const userVehicleMap = new Map();
+    const currentBR = getCurrentBRColumn();
 
-        for (const [, guild] of client.guilds.cache) {
-            for (const channelId of VOICE_CHANNELS_IDS) {
-                const channel = guild.channels.cache.get(channelId);
-                if (!channel?.members) continue;
+    for (const channelId of VOICE_CHANNEL_IDS) {
+      let channel;
+      try {
+        channel = await client.channels.fetch(channelId);
+      } catch {
+        continue;
+      }
+      if (!channel?.members) continue;
 
-                for (const [, member] of channel.members) {
-                    if (member.user.bot) continue;
+      for (const [, member] of channel.members) {
+        if (member.user.bot) continue;
 
-                    const rawDisplayName = member.displayName;
-                    const simplifiedName = extractNameBeforePipe(rawDisplayName);
-                    const userVehicles = getVehiclesForUser(simplifiedName, currentBR);
-                    userVehicleMap.set(rawDisplayName, userVehicles);
-                }
-            }
-        }
-
-        const currentState = JSON.stringify([...userVehicleMap.entries()]);
-        const lastState = JSON.stringify([...lastUserVehiclesMap.entries()]);
-
-        if (currentState !== lastState) {
-            const targetChannel = await client.channels.fetch(VEHICLE_POST_CHANNEL_ID);
-            const embed = generateEmbedContent(userVehicleMap, currentBR);
-
-            if (lastVehicleEmbed) {
-                await lastVehicleEmbed.edit({ embeds: [embed] });
-            } else {
-                lastVehicleEmbed = await targetChannel.send({ embeds: [embed] });
-            }
-
-            webState.currentBR = currentBR;
-            webState.brEndsIn = getRemainingTime(currentBR);
-            webState.voiceUsers = [...userVehicleMap.entries()].map(([name, vehicles]) => ({ name, vehicles }));
-
-            lastUserVehiclesMap = userVehicleMap;
-        }
-    } catch (err) {
-        console.error("Error updating vehicle embed:", err);
+        const displayName = member.displayName ?? member.user.username;
+        const normalizedName = normalizeDiscordName(displayName);
+        const vehicles = getVehiclesForUser(normalizedName, currentBR);
+        
+        userVehicleMap.set(displayName, vehicles);
+      }
     }
+
+    const currentState = JSON.stringify([...userVehicleMap.entries()]);
+    const lastState = JSON.stringify([...lastUserVehiclesMap.entries()]);
+
+    if (currentState !== lastState) {
+      const targetChannel = await client.channels.fetch(VEHICLE_POST_CHANNEL_ID).catch(() => null);
+      if (!targetChannel) {
+        console.error("[autoQueue] Target channel not found");
+        return;
+      }
+
+      const embed = generateEmbedContent(userVehicleMap, currentBR);
+
+      if (lastVehicleEmbed) {
+        try {
+          await lastVehicleEmbed.edit({ embeds: [embed] });
+        } catch {
+          lastVehicleEmbed = await targetChannel.send({ embeds: [embed] });
+        }
+      } else {
+        lastVehicleEmbed = await targetChannel.send({ embeds: [embed] });
+      }
+
+      // Update webState
+      webState.currentBR = currentBR;
+      webState.brEndsIn = getRemainingTime(currentBR);
+      webState.voiceUsers = [...userVehicleMap.entries()].map(([name, vehicles]) => ({ name, vehicles }));
+
+      lastUserVehiclesMap = userVehicleMap;
+    }
+  } catch (err) {
+    console.error("[autoQueue] Error updating vehicle embed:", err);
+  }
 }
 
-module.exports = { updateVoiceVehicleEmbed };
+module.exports = {
+  getVehiclesForUser,
+  updateVoiceVehicleEmbed,
+};
