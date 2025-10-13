@@ -213,7 +213,7 @@ function saveToDatabase(playersData) {
     db.exec("DELETE FROM vehicles;");
 
     for (const p of players) {
-      const user = insertUser.get(p.name, p.id);
+      const user = insertUser.get(normalizeUsername(p.name), p.id);
       for (const [br, vehicles] of Object.entries(p.brBuckets)) {
         if (br === "UNKNOWN" || !vehicles) continue;
         vehicles.split(",").map(v => v.trim()).filter(Boolean).forEach(v => {
@@ -242,7 +242,7 @@ async function main() {
     const results = [];
     for (const p of players) {
       const normalizedName = normalizeUsername(p.name);
-      console.log(`Processing ${p.name} (${p.id})...`);
+      console.log(`Processing ${normalizeUsername(p.name)} (${p.id})...`);
       const makeStat = await fetchMakeStatById(p.id);
       const rows = extractVehicleRowsFromMakeStat(makeStat);
       const ownedList = buildOwnedListFromRows(rows, masterVehicles);
