@@ -47,6 +47,7 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_vehicles_user_br ON vehicles (user_id, br);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_user_vehicle_unique ON vehicles (user_id, vehicle_name);
 `);
 
 const insertUser = db.prepare(`
@@ -59,6 +60,8 @@ const insertUser = db.prepare(`
 const insertVehicle = db.prepare(`
   INSERT INTO vehicles (user_id, br, vehicle_name)
   VALUES (?, ?, ?)
+  ON CONFLICT(user_id, vehicle_name)
+  DO UPDATE SET br = excluded.br
 `);
 
 // ===== HELPERS =====
@@ -210,22 +213,26 @@ function bucketByBR(masterVehicles, ownedList) {
 // ===== DATABASE SAVE =====
 function saveToDatabase(playersData) {
   const tx = db.transaction(players => {
-    db.exec("DELETE FROM vehicles;");
-
     for (const p of players) {
       const user = insertUser.get(normalizeUsername(p.name), p.id);
+
       for (const [br, vehicles] of Object.entries(p.brBuckets)) {
         if (br === "UNKNOWN" || !vehicles) continue;
-        vehicles.split(",").map(v => v.trim()).filter(Boolean).forEach(v => {
-          insertVehicle.run(user.id, parseFloat(br), v);
-        });
+
+        vehicles.split(",")
+          .map(v => v.trim())
+          .filter(Boolean)
+          .forEach(v => {
+            insertVehicle.run(user.id, parseFloat(br), v);
+          });
       }
     }
   });
 
   tx(playersData);
-  console.log(`✅ Saved ${playersData.length} players to database at ${dbPath}`);
+  console.log(`✅ Saved/updated ${playersData.length} players to database at ${dbPath}`);
 }
+
 
 // ===== MAIN =====
 async function main() {
