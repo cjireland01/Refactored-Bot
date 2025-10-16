@@ -134,7 +134,11 @@ async function updateVoiceVehicleEmbed(client, getCurrentBRColumn) {
         return;
       }
 
-      const embed = generateEmbedContent(userVehicleMap, currentBR);
+      const sortedEntries = [...userVehicleMap.entries()].sort(
+        (a,b) => a[1].length - b[1].length
+      );
+      const sortedMap = new Map(sortedEntries);
+      const embed = generateEmbedContent(sortedMap, currentBR);
 
       if (lastVehicleEmbed) {
         try {
