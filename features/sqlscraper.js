@@ -191,7 +191,7 @@ function bucketByBR(masterVehicles, ownedList) {
 
   for (const item of ownedList) {
     const master = masterVehicles[item.key];
-    let br = master?.battleRatingArcade ?? master?.battleRatingHistorical ?? master?.battleRatingSimulation;
+    let br = master?.battleRatingHistorical;
     if (typeof br === "number") {
       const closest = BR_STEPS.reduce((a, b) => Math.abs(b - br) < Math.abs(a - br) ? b : a);
       if (Math.abs(closest - br) <= 0.4) {
