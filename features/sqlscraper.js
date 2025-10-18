@@ -6,13 +6,15 @@ import * as dotenv from "dotenv";
 import Database from "better-sqlite3";
 import path from "path";
 
-dotenv.config({ path: path.resolve("/home/cireland/Refactored-Bot/.env") });
+dotenv.config( {path: '../.env'} );
 
 // ===== CONFIGURATION =====
 const SQUAD_ID = "1125864";
 let TURNSTILE_TOKEN = process.env.TURNSTILE_TOKEN;
 const PLAYER_LIMIT = process.env.PLAYER_LIMIT;
 const API_BASE = "https://statshark.net";
+
+const MIN_GAMES = 20;
 
 const BR_STEPS = [
   1.0, 1.3, 1.7, 2.0, 2.3, 2.7, 3.0, 3.3, 3.7, 4.0,
@@ -26,7 +28,7 @@ const BR_STEPS = [
 const __fileName = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__fileName);
 
-const dbPath = path.join(__dirname, "..", "data", "botdata.db");
+const dbPath = path.join(__dirname, "..", "data", "testbotdata.db");
 const db = new Database(dbPath);
 
 db.exec(`
@@ -153,28 +155,63 @@ async function fetchMakeStatById(playerId) {
     const text = await res.text();
     if (!text.trim()) return { Vehicles: [] };
 
-    try { return JSON.parse(text); } catch {
+    // Try normal parse first
+    try {
+      return JSON.parse(text);
+    } catch {
+      // Fallback: malformed JSON — multiple arrays at root level
+      const matches = [...text.matchAll(/\[(?:\s*\[.*?\]\s*,?)*\]/gs)];
+      if (matches.length >= 2) {
+        // index 1 = realistic
+        try {
+          const realistic = JSON.parse(matches[1][0]);
+          return { Vehicles: realistic };
+        } catch (e) {
+          console.warn("Failed to parse realistic section:", e);
+          return { Vehicles: [] };
+        }
+      }
       console.warn(`Failed to parse player ${playerId} data, skipping.`);
       return { Vehicles: [] };
     }
   }
 }
 
+
 // ===== VEHICLE PROCESSING =====
 function extractVehicleRowsFromMakeStat(data) {
   const outRows = [];
-  function walk(x) {
-    if (Array.isArray(x)) {
-      if (x.length && Array.isArray(x[0])) for (const c of x) walk(c);
-      else {
-        const last = x[x.length - 1];
-        if (typeof last === "string" && last.includes("_") && x.length >= 3) outRows.push(x);
+
+  const realisticArray = Array.isArray(data?.Vehicles) ? data.Vehicles[1] : null;
+  if (!Array.isArray(realisticArray)) return outRows;
+
+  function flattenVehicles(arr) {
+    for (const item of arr) {
+      if (Array.isArray(item[0])) {
+        flattenVehicles(item);
+      } else {
+        const key = item[item.length - 1];
+        const gamesPlayed = item[4]; // index 3 is games played
+        if (key && typeof gamesPlayed === "number" && gamesPlayed >= MIN_GAMES) {
+          outRows.push(item);
+          console.log(`Row kept: games=${gamesPlayed} vehicle=${item[2]} key=${key}`);
+        } else {
+          console.log(`Row skipped: games=${gamesPlayed} vehicle=${item[2]} key=${key}`);
+        }
       }
-    } else if (x && typeof x === "object") for (const v of Object.values(x)) walk(v);
+    }
   }
-  if (data?.Vehicles) walk(data.Vehicles);
+
+  flattenVehicles(realisticArray);
+  console.log(`Kept ${outRows.length} vehicles with >= ${MIN_GAMES} games`);
+
   return outRows;
 }
+
+
+
+
+
 
 function buildOwnedListFromRows(rows, masterVehicles) {
   return rows.map(r => {
