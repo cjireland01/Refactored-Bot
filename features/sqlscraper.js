@@ -6,7 +6,7 @@ import * as dotenv from "dotenv";
 import Database from "better-sqlite3";
 import path from "path";
 
-dotenv.config( {path: '../.env'} );
+dotenv.config( {path: "/home/cireland/Refactored-Bot/.env"} );
 
 // ===== CONFIGURATION =====
 const SQUAD_ID = "1125864";
@@ -28,7 +28,7 @@ const BR_STEPS = [
 const __fileName = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__fileName);
 
-const dbPath = path.join(__dirname, "..", "data", "testbotdata.db");
+const dbPath = path.join(__dirname, "..", "data", "botdata.db");
 const db = new Database(dbPath);
 
 db.exec(`

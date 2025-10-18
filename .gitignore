@@ -1,7 +1,8 @@
 .env
 .env.local
 *.db
-
+statsCache.json
+*.bak
 
 *.log
 /node_modules/
