@@ -194,9 +194,6 @@ function extractVehicleRowsFromMakeStat(data) {
         const gamesPlayed = item[4]; // index 3 is games played
         if (key && typeof gamesPlayed === "number" && gamesPlayed >= MIN_GAMES) {
           outRows.push(item);
-          console.log(`Row kept: games=${gamesPlayed} vehicle=${item[2]} key=${key}`);
-        } else {
-          console.log(`Row skipped: games=${gamesPlayed} vehicle=${item[2]} key=${key}`);
         }
       }
     }
