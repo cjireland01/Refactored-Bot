@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { TEXT_CHANNELS, ALT_USERS } = require("../config/constants");
+const { TEXT_CHANNELS } = require("../config/constants");
 const db = require("../utils/db");
 
 // === Config ===
@@ -9,6 +9,11 @@ const ALT_CHANNEL_ID = TEXT_CHANNELS.ALTQUEUE;
 let lastAltTracker = null;
 
 // --- Helpers ---
+function getAltUsersFromDB() {
+  const rows = db.prepare("SELECT username FROM users WHERE is_alt = 1").all();
+  return rows.map(r => r.username);
+}
+
 function getVehiclesForAlt(username, currentBR) {
   const brFloat = parseFloat(currentBR);
   const brMin = isNaN(brFloat) ? null : brFloat - 1.0;
@@ -83,7 +88,13 @@ async function updateAltTrackerEmbed(client, getCurrentBRColumn) {
     const currentBR = getCurrentBRColumn();
     const userVehicleMap = new Map();
 
-    ALT_USERS.forEach(username => {
+    const altUsers = getAltUsersFromDB();
+    if (!altUsers.length) {
+      console.log("[altQueue] No alt users found in database.");
+      return;
+    }
+
+    altUsers.forEach(username => {
       const userVehicles = getVehiclesForAlt(username, currentBR);
       userVehicleMap.set(username, userVehicles);
     });
