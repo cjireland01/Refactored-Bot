@@ -29,10 +29,16 @@ function getVehiclesForUser(userOrMember, currentBR) {
   } else {
     queryName = normalizeDiscordName(userOrMember || "");
   }
+  let brMin, brMax;
 
-  const brFloat = parseFloat(currentBR);
-  const brMin = isNaN(brFloat) ? null : brFloat - 1.0;
-  const brMax = isNaN(brFloat) ? null : brFloat;
+  if (parseFloat(currentBR) === 14.0) {
+    brMin = 11.0;
+    brMax = 14.0;
+  }
+  else {
+    brMin = parseFloat(currentBR) - 1.0;
+    brMax = parseFloat(currentBR);
+  }
 
   // User query
   let userRow = null;

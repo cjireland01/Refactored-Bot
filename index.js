@@ -23,6 +23,24 @@ const client = new Client({
 
 client.commands = new Collection();
 
+// ---- load slash commands into client.commands ----
+const commandsPath = path.join(__dirname, "commands");
+if (fs.existsSync(commandsPath)) {
+  const commandFolders = fs.readdirSync(commandsPath).filter(f => fs.statSync(path.join(commandsPath, f)).isDirectory());
+  for (const folder of commandFolders) {
+    const folderPath = path.join(commandsPath, folder);
+    const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith(".js"));
+    for (const file of commandFiles) {
+      const filePath = path.join(folderPath, file);
+      const command = require(filePath);
+      if (command?.data?.name) {
+        client.commands.set(command.data.name, command);
+      }
+    }
+  }
+}
+
+
 // Load events dynamically
 const eventsPath = path.join(__dirname, "events");
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith(".js"));
