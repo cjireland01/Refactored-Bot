@@ -81,13 +81,22 @@ function generateEmbedContent(userVehicleMap, currentBR) {
     .setTimestamp()
     .setFooter({ text: "Tracked every 5 seconds" });
 
+  // Helper to clean up vehicle names
+  const sanitizeVehicleName = (name) => {
+    return name
+      .replace(/[^\w\s.\-]/g, "")  // remove anything not alphanumeric, space, period, or dash
+      .replace(/\s+/g, " ")        // collapse multiple spaces
+      .trim();                     // remove leading/trailing spaces
+  };
+
   for (const [username, vehicles] of userVehicleMap.entries()) {
     if (!vehicles?.length) continue;
 
     const grouped = {};
     vehicles.forEach(({ Vehicle, BR }) => {
+      const cleanName = sanitizeVehicleName(Vehicle);
       if (!grouped[BR]) grouped[BR] = [];
-      grouped[BR].push(Vehicle);
+      grouped[BR].push(cleanName);
     });
 
     const sortedBRs = Object.keys(grouped).sort((a, b) => parseFloat(b) - parseFloat(a));
@@ -103,6 +112,7 @@ function generateEmbedContent(userVehicleMap, currentBR) {
 
   return embed;
 }
+
 
 // Sends/edits embed
 async function updateVoiceVehicleEmbed(client, getCurrentBRColumn) {
