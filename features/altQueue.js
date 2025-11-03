@@ -9,11 +9,23 @@ const ALT_CHANNEL_ID = TEXT_CHANNELS.ALTQUEUE;
 let lastAltTracker = null;
 
 // --- Helpers ---
+
+/**
+ * Fetch all usernames marked as alt accounts from the database
+ */
 function getAltUsersFromDB() {
-  const rows = db.prepare("SELECT username FROM users WHERE is_alt = 1").all();
-  return rows.map(r => r.username);
+  try {
+    const rows = db.prepare("SELECT username FROM users WHERE is_alt = 1").all();
+    return rows.map(r => r.username);
+  } catch (err) {
+    console.error("[altQueue] Failed to fetch alt users:", err);
+    return [];
+  }
 }
 
+/**
+ * Fetch vehicle list for a specific alt user within the BR range
+ */
 function getVehiclesForAlt(username, currentBR) {
   const brFloat = parseFloat(currentBR);
   const brMin = isNaN(brFloat) ? null : brFloat - 1.0;
@@ -23,36 +35,49 @@ function getVehiclesForAlt(username, currentBR) {
     .prepare(`SELECT * FROM users WHERE LOWER(username) = ?`)
     .get(username.toLowerCase());
 
-  if (!userRow) {
-    return [];
-  }
+  if (!userRow) return [];
 
   let rows;
   if (brMin !== null && brMax !== null) {
     rows = db
       .prepare(
-        `SELECT vehicle_name, br 
-         FROM vehicles 
-         WHERE user_id = ? 
-           AND br BETWEEN ? AND ?`
+        `SELECT vehicle_name, br
+         FROM vehicles
+         WHERE user_id = ?
+           AND br BETWEEN ? AND ?
+         ORDER BY br DESC`
       )
       .all(userRow.id, brMin, brMax);
   } else {
     rows = db
       .prepare(
-        `SELECT vehicle_name, br 
-         FROM vehicles 
-         WHERE user_id = ?`
+        `SELECT vehicle_name, br
+         FROM vehicles
+         WHERE user_id = ?
+         ORDER BY br DESC`
       )
       .all(userRow.id);
   }
 
   return rows.map(r => ({
-    Vehicle: r.vehicle_name,
+    Vehicle: sanitizeVehicleName(r.vehicle_name),
     BR: r.br.toFixed(1),
   }));
 }
 
+/**
+ * Remove unwanted symbols and whitespace from vehicle names
+ */
+function sanitizeVehicleName(name) {
+  if (!name) return "";
+  return name
+    .replace(/[^\p{L}\p{N}\s\-\.\(\)\/]/gu, "") // removes special icons like ▄ ◊ etc.
+    .trim();
+}
+
+/**
+ * Generate embed content showing all alt users and their vehicles
+ */
 function generateAltUserEmbedContent(userVehicleMap, currentBR) {
   const embed = new EmbedBuilder()
     .setTitle(`Alt Tracker - BR: ${currentBR}`)
@@ -63,6 +88,7 @@ function generateAltUserEmbedContent(userVehicleMap, currentBR) {
   for (const [username, vehicles] of userVehicleMap.entries()) {
     if (!vehicles?.length) continue;
 
+    // Group vehicles by BR
     const grouped = {};
     vehicles.forEach(({ Vehicle, BR }) => {
       if (!grouped[BR]) grouped[BR] = [];
@@ -72,6 +98,7 @@ function generateAltUserEmbedContent(userVehicleMap, currentBR) {
     const sortedBRs = Object.keys(grouped).sort((a, b) => parseFloat(b) - parseFloat(a));
     let formatted = sortedBRs.map(br => `${br} - ${grouped[br].join(", ")}`).join("\n");
 
+    // Prevent exceeding Discord embed limits
     if (formatted.length > 1000) {
       formatted = formatted.slice(0, 997) + "...";
       formatted += "\n+ some not shown";
@@ -80,20 +107,27 @@ function generateAltUserEmbedContent(userVehicleMap, currentBR) {
     embed.addFields({ name: username, value: formatted, inline: false });
   }
 
+  if (embed.data.fields?.length === 0) {
+    embed.setDescription("No active alt vehicles found for this BR range.");
+  }
+
   return embed;
 }
 
+/**
+ * Update (or post) the Alt Tracker embed in Discord
+ */
 async function updateAltTrackerEmbed(client, getCurrentBRColumn) {
   try {
     const currentBR = getCurrentBRColumn();
-    const userVehicleMap = new Map();
-
     const altUsers = getAltUsersFromDB();
+
     if (!altUsers.length) {
       console.log("[altQueue] No alt users found in database.");
       return;
     }
 
+    const userVehicleMap = new Map();
     altUsers.forEach(username => {
       const userVehicles = getVehiclesForAlt(username, currentBR);
       userVehicleMap.set(username, userVehicles);
@@ -101,7 +135,7 @@ async function updateAltTrackerEmbed(client, getCurrentBRColumn) {
 
     const targetChannel = await client.channels.fetch(ALT_CHANNEL_ID);
     if (!targetChannel) {
-      console.error(`[altVehicles] Channel ${ALT_CHANNEL_ID} not found`);
+      console.error(`[altQueue] Channel ${ALT_CHANNEL_ID} not found`);
       return;
     }
 
@@ -117,7 +151,7 @@ async function updateAltTrackerEmbed(client, getCurrentBRColumn) {
       lastAltTracker = await targetChannel.send({ embeds: [embed] });
     }
   } catch (err) {
-    console.error("[altVehicles] Error updating alt vehicle embed:", err.message);
+    console.error("[altQueue] Error updating alt vehicle embed:", err);
   }
 }
 
