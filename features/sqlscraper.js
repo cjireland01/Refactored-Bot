@@ -37,7 +37,8 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
-    member_id TEXT UNIQUE
+    member_id TEXT UNIQUE,
+    is_alt INTEGER DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS vehicles (
@@ -225,24 +226,45 @@ function bucketByBR(masterVehicles, ownedList) {
 
   for (const item of ownedList) {
     const master = masterVehicles[item.key];
-    let br = master?.battleRatingHistorical;
+    if (!master) continue;
+
+    // Skip ships entirely
+    if (master.unitMoveType === "ship" || master.unitMoveType === "fast_ship") {
+      continue;
+    }
+
+    // Gives air its ground rating
+    let br = null;
+    if (master.unitMoveType === "air") {
+      br = master.battleRatingTankHistorical ?? master.battleRatingHistorical;
+    } else {
+      br = master.battleRatingHistorical;
+    }
+
     if (typeof br === "number") {
-      const closest = BR_STEPS.reduce((a, b) => Math.abs(b - br) < Math.abs(a - br) ? b : a);
+      const closest = BR_STEPS.reduce((a, b) =>
+        Math.abs(b - br) < Math.abs(a - br) ? b : a
+      );
       if (Math.abs(closest - br) <= 0.4) {
         buckets[closest.toFixed(1)].push(item.name);
         continue;
       }
     }
+
     buckets.UNKNOWN.push(item.name);
   }
 
   const out = {};
   Object.keys(buckets).forEach(k => {
     const seen = new Set();
-    out[k] = buckets[k].filter(v => !seen.has(v) && seen.add(v)).join(", ");
+    out[k] = buckets[k]
+      .filter(v => !seen.has(v) && seen.add(v))
+      .join(", ");
   });
   return out;
 }
+
+
 
 // ===== DATABASE SAVE =====
 function saveToDatabase(playersData) {
