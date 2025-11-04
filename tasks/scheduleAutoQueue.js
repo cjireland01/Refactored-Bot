@@ -3,15 +3,15 @@ const { updateAltTrackerEmbed } = require("../features/altQueue");
 
 function getCurrentBRColumn() {
     const schedule = [
-        { br: 14.0, start: "2025-09-01" },
-        { br: 12.0, start: "2025-09-08" },
-        { br: 11.0, start: "2025-09-15" },
-        { br: 10.0, start: "2025-09-22" },
-        { br: 9.0,  start: "2025-09-29" },
-        { br: 8.0,  start: "2025-10-06" },
-        { br: 7.0,  start: "2025-10-13" },
-        { br: 6.0,  start: "2025-10-20" },
-        { br: 5.0,  start: "2025-10-27" }
+        { br: 14.0, start: "2025-11-01" },
+        { br: 12.0, start: "2025-11-07" },
+        { br: 10.7, start: "2025-11-14" },
+        { br: 9.7, start: "2025-11-21" },
+        { br: 8.7,  start: "2025-11-28" },
+        { br: 7.3,  start: "2025-12-05" },
+        { br: 6.3,  start: "2025-12-12" },
+        { br: 5.7,  start: "2025-12-19" },
+        { br: 4.7,  start: "2025-12-26" }
     ];
 
     const nowUtc = new Date();
@@ -27,6 +27,14 @@ function getCurrentBRColumn() {
     return Number(14.0).toFixed(1);
 }
 
+async function runAutoQueue(client) {
+    try {
+        await updateVoiceVehicleEmbed(client, getCurrentBRColumn);
+    } catch (err) {
+        console.error("[AutoQueue] Failed to run manually:", err);
+    }
+}
+
 module.exports = {
     start(client) {
         client.once("clientReady", () => {
@@ -36,5 +44,7 @@ module.exports = {
             setInterval(() => updateAltTrackerEmbed(client, getCurrentBRColumn), (1000*60*60*24)) // Update every 24 hours
         });
         
-    }
+    },
+    getCurrentBRColumn,
+    runAutoQueue
 };

@@ -1,5 +1,7 @@
-// tasks/restartDelete.js
 const { TEXT_CHANNELS } = require("../config/constants");
+const { updateAltTrackerEmbed } = require("../features/altQueue");
+const { runAutoQueue } = require("../tasks/scheduleAutoQueue");
+const { getCurrentBRColumn } = require("../tasks/scheduleAutoQueue");
 
 module.exports = {
   async start(client) {
@@ -8,8 +10,7 @@ module.exports = {
 
       const CHANNEL_IDS = [
         TEXT_CHANNELS.AUTOQUEUE,
-        //TEXT_CHANNELS.ALTQUEUE,
-        TEXT_CHANNELS.INTEL, 
+        TEXT_CHANNELS.INTEL,
       ];
 
       for (const id of CHANNEL_IDS) {
@@ -18,23 +19,18 @@ module.exports = {
           if (!channel?.isTextBased()) continue;
 
           console.log(`[RestartDelete] Checking ${channel.name}...`);
-          const messages = await channel.messages.fetch({ limit: 20 });
+          const messages = await channel.messages.fetch({ limit: 50 });
           const botMessages = messages.filter(m => m.author.id === client.user.id);
 
           for (const [, msg] of botMessages) {
-            // Skip Intel messages with the "VCoM Auto SRE Stats" title
             const embed = msg.embeds?.[0];
             const title = embed?.title?.trim();
 
-            if (
-              title &&
-              title.includes("VCoM Auto SRE Stats")
-            ) {
+            if (title && title.includes("VCoM Auto SRE Stats")) {
               console.log(`[RestartDelete] Preserving Intel message: "${title}"`);
-              continue; // skip deleting this one
+              continue;
             }
 
-            // Delete anything else (AutoQueue, AltQueue, old Intel embeds)
             await msg.delete().catch(() => {});
           }
 
@@ -45,6 +41,24 @@ module.exports = {
       }
 
       console.log("✅ [RestartDelete] Cleanup complete.");
+
+      // Post altQueue first
+      try {
+        console.log("📋 [RestartDelete] Regenerating AltQueue embed...");
+        await updateAltTrackerEmbed(client, getCurrentBRColumn);
+        console.log("✅ [RestartDelete] AltQueue embed regenerated.");
+      } catch (err) {
+        console.error("❌ [RestartDelete] Failed to regenerate AltQueue embed:", err);
+      }
+
+      // Post autoQueue second
+      try {
+        console.log("📋 [RestartDelete] Regenerating AutoQueue embed...");
+        await runAutoQueue(client);
+        console.log("✅ [RestartDelete] AutoQueue embed regenerated.");
+      } catch (err) {
+        console.error("❌ [RestartDelete] Failed to regenerate AutoQueue embed:", err);
+      }
     });
-  }
+  },
 };

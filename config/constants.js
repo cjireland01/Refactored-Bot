@@ -2,7 +2,7 @@ module.exports = {
     // === Text Channels ===
     TEXT_CHANNELS: {
         AUTOQUEUE: "1355664305932206200",
-        ALTQUEUE: "1349945153103597750",
+        ALTQUEUE: "1355664305932206200",
         INTEL: "1324759892275363982",
         WARNINGS: "1421676401458679848",
         SUGGESTIONS: "1345885117519888465"
@@ -19,20 +19,6 @@ module.exports = {
     TAGS: {
         VCOM: "vcom",
     },
-
-    // === Alt Accounts ===
-    ALT_USERS : [
-        "DemonOfFemboyz",
-        "DemonOfPlagues",
-        "Demon_of_TomBoys",
-        "DemonOfToes",
-        "Shmoo_23",
-        "Majmun_Jim",
-        "cornishpride",
-        "immortalviper",
-        "Bobbj"
-
-    ],
 
     // === Leaderboard Settings ===
     LEADERBOARD: {

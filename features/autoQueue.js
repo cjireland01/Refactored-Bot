@@ -1,4 +1,3 @@
-// features/autoQueue.js
 const { EmbedBuilder } = require("discord.js");
 const { webState, getRemainingTime } = require("../server");
 const { TEXT_CHANNELS, VOICE_CHANNELS } = require("../config/constants");
@@ -81,12 +80,11 @@ function generateEmbedContent(userVehicleMap, currentBR) {
     .setTimestamp()
     .setFooter({ text: "Tracked every 5 seconds" });
 
-  // Helper to clean up vehicle names
   const sanitizeVehicleName = (name) => {
     return name
-      .replace(/[^\w\s.\-]/g, "")  // remove anything not alphanumeric, space, period, or dash
-      .replace(/\s+/g, " ")        // collapse multiple spaces
-      .trim();                     // remove leading/trailing spaces
+      .replace(/[^\w\s.\-]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
   };
 
   for (const [username, vehicles] of userVehicleMap.entries()) {

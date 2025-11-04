@@ -27,9 +27,16 @@ function getAltUsersFromDB() {
  * Fetch vehicle list for a specific alt user within the BR range
  */
 function getVehiclesForAlt(username, currentBR) {
-  const brFloat = parseFloat(currentBR);
-  const brMin = isNaN(brFloat) ? null : brFloat - 1.0;
-  const brMax = isNaN(brFloat) ? null : brFloat;
+ let brMin, brMax;
+
+  if (parseFloat(currentBR) === 14.0) {
+    brMin = 11.0;
+    brMax = 14.0;
+  }
+  else {
+    brMin = parseFloat(currentBR) - 1.0;
+    brMax = parseFloat(currentBR);
+  }
 
   const userRow = db
     .prepare(`SELECT * FROM users WHERE LOWER(username) = ?`)
@@ -71,7 +78,7 @@ function getVehiclesForAlt(username, currentBR) {
 function sanitizeVehicleName(name) {
   if (!name) return "";
   return name
-    .replace(/[^\p{L}\p{N}\s\-\.\(\)\/]/gu, "") // removes special icons like ▄ ◊ etc.
+    .replace(/[^\p{L}\p{N}\s\-\.\(\)\/]/gu, "") 
     .trim();
 }
 
