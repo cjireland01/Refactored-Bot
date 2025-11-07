@@ -10,6 +10,7 @@ module.exports = {
 
       const CHANNEL_IDS = [
         TEXT_CHANNELS.AUTOQUEUE,
+        TEXT_CHANNELS.ALTQUEUE,
         TEXT_CHANNELS.INTEL,
       ];
 

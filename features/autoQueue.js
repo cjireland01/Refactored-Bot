@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
-const { webState, getRemainingTime } = require("../server");
+const { webState } = require("../server/state.js");
+const { getRemainingTime } = require("../server/utils/schedule.js")
 const { TEXT_CHANNELS, VOICE_CHANNELS } = require("../config/constants");
 const db = require("../utils/db");
 
@@ -16,6 +17,16 @@ function normalizeDiscordName(name) {
     if (!name) return "";
     return name.split("|")[0].split("-")[0].split("@")[0].trim().toLowerCase();
 }
+
+function sanitizeNameBackend(s) {
+  if (!s) return "";
+  let out = String(s).normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  out = out.replace(/\p{C}/gu, "");
+  out = out.replace(/[^\p{L}\p{N}\s,\.\-'\(\)\/:\+&]/gu, "");
+  out = out.replace(/\s+/g, " ").trim();
+  return out;
+}
+
 
 // --- Query vehicles from DB ---
 function getVehiclesForUser(userOrMember, currentBR) {
@@ -80,19 +91,12 @@ function generateEmbedContent(userVehicleMap, currentBR) {
     .setTimestamp()
     .setFooter({ text: "Tracked every 5 seconds" });
 
-  const sanitizeVehicleName = (name) => {
-    return name
-      .replace(/[^\w\s.\-]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  };
-
   for (const [username, vehicles] of userVehicleMap.entries()) {
     if (!vehicles?.length) continue;
 
     const grouped = {};
     vehicles.forEach(({ Vehicle, BR }) => {
-      const cleanName = sanitizeVehicleName(Vehicle);
+      const cleanName = sanitizeNameBackend(Vehicle);
       if (!grouped[BR]) grouped[BR] = [];
       grouped[BR].push(cleanName);
     });
@@ -118,6 +122,7 @@ async function updateVoiceVehicleEmbed(client, getCurrentBRColumn) {
     const userVehicleMap = new Map();
     const currentBR = getCurrentBRColumn();
 
+    // Build map of users and their vehicles
     for (const channelId of VOICE_CHANNEL_IDS) {
       let channel;
       try {
@@ -133,11 +138,12 @@ async function updateVoiceVehicleEmbed(client, getCurrentBRColumn) {
         const displayName = member.displayName ?? member.user.username;
         const normalizedName = normalizeDiscordName(displayName);
         const vehicles = getVehiclesForUser(normalizedName, currentBR);
-        
+
         userVehicleMap.set(displayName, vehicles);
       }
     }
 
+    // Compare state to avoid unnecessary updates
     const currentState = JSON.stringify([...userVehicleMap.entries()]);
     const lastState = JSON.stringify([...lastUserVehiclesMap.entries()]);
 
@@ -149,11 +155,12 @@ async function updateVoiceVehicleEmbed(client, getCurrentBRColumn) {
       }
 
       const sortedEntries = [...userVehicleMap.entries()].sort(
-        (a,b) => a[1].length - b[1].length
+        (a, b) => a[1].length - b[1].length
       );
       const sortedMap = new Map(sortedEntries);
       const embed = generateEmbedContent(sortedMap, currentBR);
 
+      // Send or update embed
       if (lastVehicleEmbed) {
         try {
           await lastVehicleEmbed.edit({ embeds: [embed] });
@@ -164,10 +171,29 @@ async function updateVoiceVehicleEmbed(client, getCurrentBRColumn) {
         lastVehicleEmbed = await targetChannel.send({ embeds: [embed] });
       }
 
-      // Update webState
+      // Update webState with proper serialization (simple strings)
       webState.currentBR = currentBR;
       webState.brEndsIn = getRemainingTime(currentBR);
-      webState.voiceUsers = [...userVehicleMap.entries()].map(([name, vehicles]) => ({ name, vehicles }));
+      // previous:
+// webState.voiceUsers = [...userVehicleMap.entries()].map(([name, vehicles]) => ({ name, vehicles }));
+
+// replace with:
+      webState.voiceUsers = [...userVehicleMap.entries()].map(([name, vehicles]) => ({
+        username: name,
+        vehicles: vehicles.map(v => {
+          if (!v) return null;
+          if (typeof v === "object") {
+           // format like "Name (BR)"
+            const rawName = v.Vehicle ?? v.vehicle_name ?? v.name ?? "";
+            const rawBR = v.BR ?? v.br ?? v.brRaw ?? "";
+            return `${sanitizeNameBackend(rawName)}${rawBR ? ` (${Number(rawBR).toFixed(1)})` : ""}`;
+          }
+          // if it's already a string
+         // parse out and sanitize the name portion (we can reuse client parsing too but simpler: sanitize whole string)
+          return sanitizeNameBackend(String(v));
+       }).filter(Boolean)
+      }));
+
 
       lastUserVehiclesMap = userVehicleMap;
     }

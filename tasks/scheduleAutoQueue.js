@@ -1,3 +1,5 @@
+import db from "../utils/db.js";
+
 const { updateVoiceVehicleEmbed } = require("../features/autoQueue");
 const { updateAltTrackerEmbed } = require("../features/altQueue");
 
