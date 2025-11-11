@@ -1,5 +1,5 @@
 import express from "express";
-import db from "../utils/db.js";
+import db from "../../utils/db.js";
 
 const router = express.Router();
 
@@ -9,7 +9,7 @@ router.get("/", (_, res) => {
     const rows = db.prepare(`
       SELECT id, br, start 
       FROM br_schedule 
-      ORDER BY start ASC
+      ORDER BY br DESC
     `).all();
     res.json(rows);
   } catch (err) {
@@ -22,6 +22,8 @@ router.get("/", (_, res) => {
 router.post("/", (req, res) => {
   try {
     const { id, br, start } = req.body;
+    console.log("Update request:", req.body);
+
     if (!br || !start) return res.status(400).json({ error: "Missing parameters" });
 
     if (id) {

@@ -11,6 +11,7 @@ module.exports = {
     // === Voice Channels ===
     VOICE_CHANNELS: {
         WAITING_ROOM: "1324758658449543168",
+        WAITING_ROOM_2: "1436397366461862180",
         SILENT_ROOM: "1343522310409424918",
         MUSIC_ROOM: "1354134163782893619",
     },

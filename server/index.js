@@ -3,7 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { webState } from "./state.js";
 import statusRouter from "./api/status.js";
-import brScheduleRouter from "./api/brSchedule.js";
+import brRouter from "./api/br.js";
 
 const app = express();
 const PORT = 4000;
@@ -17,7 +17,7 @@ app.use(express.json());
 
 // API routes
 app.use("/api/status", statusRouter);
-app.use("/api/br-schedule", brScheduleRouter);
+app.use("/api/br", brRouter);
 
 // Fallback for SPA routing
 app.get("*", (_, res) => {
