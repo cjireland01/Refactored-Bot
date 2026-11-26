@@ -7,6 +7,7 @@ import {
   addVehicleFields,
 } from "../utils/vehicles.js";
 import { setVoiceUsers } from "../server/state.js";
+import { isSheetMetaActive } from "../utils/metaSheet.js";
 
 const VOICE_CHANNEL_IDS = Object.values(VOICE_CHANNELS);
 
@@ -25,9 +26,15 @@ function buildEmbed(userVehicleMap, currentBR) {
     .setTitle(`Auto Queue System - Current BR ${currentBR}`)
     .setColor("#00bfff")
     .setTimestamp()
-    .setFooter({ text: "Updates when someone joins or leaves voice" });
+    .setFooter({
+      text: isSheetMetaActive()
+        ? "Meta vehicles only - updates when someone joins or leaves voice"
+        : "Updates when someone joins or leaves voice",
+    });
 
-  const skipped = addVehicleFields(embed, userVehicleMap);
+  const skipped = addVehicleFields(embed, userVehicleMap, {
+    emptyText: isSheetMetaActive() ? "No meta vehicles" : undefined,
+  });
   if (skipped > 0) embed.setDescription(`+${skipped} more not shown`);
   return embed;
 }

@@ -1,6 +1,7 @@
 // components/MetaVehiclesManager.jsx
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api.js";
+import MetaSheetStatus from "./MetaSheetStatus.jsx";
 
 /**
  * Meta Vehicles Manager
@@ -36,7 +37,7 @@ function normalizeVehicle(raw) {
   if (typeof is_meta === "string") is_meta = is_meta === "true" ? 1 : 0;
   if (typeof is_meta === "number") is_meta = is_meta ? 1 : 0;
 
-  return { vehicle_name, br, country, move_type, is_meta };
+  return { vehicle_name, br, country, move_type, is_meta, from_sheet: Boolean(raw.from_sheet) };
 }
 
 function groupMoveType(type) {
@@ -153,6 +154,7 @@ export default function MetaVehiclesManager() {
 
   return (
     <div className="p-4 bg-gray-800 rounded-md shadow">
+      <MetaSheetStatus />
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">Meta Vehicles</h2>
         <div className="flex items-center gap-2">
@@ -218,7 +220,7 @@ export default function MetaVehiclesManager() {
               <th className="py-2 px-2 w-1/6">BR</th>
               <th className="py-2 px-2 w-1/6">Country</th>
               <th className="py-2 px-2 w-1/6">Type</th>
-              <th className="py-2 px-2 w-12">Meta</th>
+              <th className="py-2 px-2 w-12" title="Ticked = on the Google meta sheet">Meta</th>
             </tr>
           </thead>
           <tbody>
@@ -232,6 +234,8 @@ export default function MetaVehiclesManager() {
                   <input
                     type="checkbox"
                     checked={v.is_meta === 1}
+                    disabled={v.from_sheet}
+                    title={v.from_sheet ? "Set by the Google meta sheet" : undefined}
                     onChange={() => toggleMeta(v.vehicle_name, v.is_meta===1)}
                   />
                 </td>

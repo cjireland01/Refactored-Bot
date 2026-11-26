@@ -1,12 +1,26 @@
 import express from "express";
+import db from "../../utils/db.js";
 import { listVehiclesWithMeta, setMetaFlag } from "../../features/metaCore.js";
+import { isSheetMetaActive, isOnMetaSheet } from "../../utils/metaSheet.js";
+
+const namesAndNations = db.prepare("SELECT DISTINCT vehicle_name, country FROM vehicles");
+
+// With a meta sheet, "meta" means "is on the sheet" (in any nation it exists in)
+function withSheetFlags(rows) {
+  const onSheet = new Set();
+  for (const { vehicle_name, country } of namesAndNations.all()) {
+    if (isOnMetaSheet(country, vehicle_name)) onSheet.add(vehicle_name);
+  }
+  return rows.map((r) => ({ ...r, is_meta: onSheet.has(r.vehicle_name) ? 1 : 0, from_sheet: true }));
+}
 
 const router = express.Router();
 
 // GET all vehicles with meta info
 router.get("/", (_, res) => {
   try {
-    res.json(listVehiclesWithMeta());
+    const rows = listVehiclesWithMeta();
+    res.json(isSheetMetaActive() ? withSheetFlags(rows) : rows);
   } catch (err) {
     console.error("Failed to fetch meta vehicles:", err);
     res.status(500).json({ error: "Internal server error" });

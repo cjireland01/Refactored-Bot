@@ -5,6 +5,7 @@ import { EmbedBuilder } from "discord.js";
 import { TEXT_CHANNELS, TAGS, LEADERBOARD } from "../config/constants.js";
 import { getDefaultHeaders } from "../utils/headers.js";
 import { DATA_DIR } from "../utils/paths.js";
+import { recordStats } from "../utils/stats.js";
 
 // Previous report, kept on disk so each report can show what changed
 const statsCacheFile = path.join(DATA_DIR, "statsCache.json");
@@ -75,6 +76,13 @@ export async function finalPosition(client) {
             await targetChannel.send({ embeds: [embed] });
             console.log("VCoM Auto SRE Stats sent successfully.");
             saveCache(vcom);
+
+            // The twice-daily report always goes into the stats history
+            try {
+                recordStats(vcom, typeof vcom.pos === "number" ? vcom.pos + 1 : null, { force: true });
+            } catch (statsErr) {
+                console.warn("[stats] Could not record snapshot:", statsErr.message);
+            }
             return;
         } catch (error) {
             console.error(`Error fetching page ${page}:`, error);

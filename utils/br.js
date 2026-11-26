@@ -13,10 +13,9 @@ const startMs = (row) => zonedTimeToMs(row.start, SWITCH_TIME);
  * The BR that is active right now, as a string like "10.7".
  * Falls back to 14.0 if nothing in the schedule has started yet.
  */
-export function getCurrentBR() {
+export function getCurrentBR(now = Date.now()) {
   try {
     const rows = selectSchedule.all();
-    const now = Date.now();
     for (let i = rows.length - 1; i >= 0; i--) {
       if (now >= startMs(rows[i])) return Number(rows[i].br).toFixed(1);
     }
@@ -30,10 +29,10 @@ export function getCurrentBR() {
  * Time until the next BR in the schedule starts, e.g. "3d 14h".
  * "Unknown" when nothing is scheduled after the current BR.
  */
-export function getRemainingTime(currentBR = getCurrentBR()) {
+export function getRemainingTime(currentBR, now = Date.now()) {
   try {
+    if (currentBR === undefined) currentBR = getCurrentBR(now);
     const rows = selectSchedule.all();
-    const now = Date.now();
 
     let currentIdx = -1;
     for (let i = rows.length - 1; i >= 0; i--) {

@@ -11,7 +11,8 @@
     "start": "node index.js",
     "build": "npm --prefix client install && npm --prefix client run build",
     "deploy-commands": "node deploy-commands.js",
-    "scrape": "node features/sqlscraper.js"
+    "scrape": "node features/sqlscraper.js",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",

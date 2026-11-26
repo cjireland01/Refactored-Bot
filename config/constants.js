@@ -48,3 +48,11 @@ export const QUEUE = {
     DEBOUNCE_MS: 1000,
     SAFETY_SWEEP_MS: 1000 * 60,
 };
+
+// === Meta vehicle sheet (optional) ===
+// A Google Sheet listing the meta vehicles. When META_SHEET_URL is set, the
+// queues only show vehicles that are on it. Blank = queues show everything.
+export const META_SHEET = {
+    URL: env("META_SHEET_URL", ""),
+    REFRESH_MS: Math.max(1, Number(env("META_SHEET_REFRESH_MINUTES", "10")) || 10) * 60 * 1000,
+};

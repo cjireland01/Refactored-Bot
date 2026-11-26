@@ -40,6 +40,25 @@ db.exec(`
     br REAL NOT NULL,
     start TEXT NOT NULL
   );
+
+  -- One row per recorded squadron snapshot (powers the dashboard's stats page)
+  CREATE TABLE IF NOT EXISTS meta_sheet_cells (
+    country TEXT NOT NULL,
+    cell TEXT NOT NULL,
+    PRIMARY KEY (country, cell)
+  );
+
+  CREATE TABLE IF NOT EXISTS stats_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    taken_at INTEGER NOT NULL,   -- milliseconds since 1970 (UTC)
+    position INTEGER,
+    score INTEGER,
+    wins INTEGER,
+    battles INTEGER,
+    members INTEGER,
+    activity INTEGER
+  );
+  CREATE INDEX IF NOT EXISTS idx_stats_history_time ON stats_history (taken_at);
 `);
 
 // Older databases may be missing columns that newer code expects.

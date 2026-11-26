@@ -2,6 +2,7 @@ import { EmbedBuilder } from "discord.js";
 import axios from "axios";
 import { TEXT_CHANNELS, TAGS, LEADERBOARD } from "../config/constants.js";
 import { getDefaultHeaders } from "../utils/headers.js";
+import { recordStats } from "../utils/stats.js";
 
 const nf = new Intl.NumberFormat("en-US");
 let isFetching = false;
@@ -40,6 +41,13 @@ export async function trackVcomLeaderboard(client) {
 
         const vcom = squads[idx];
         const pos = idx + 1;
+
+        // Keep a history for the dashboard's stats page (never lets a problem here stop the embed)
+        try {
+            recordStats(vcom, pos);
+        } catch (statsErr) {
+            console.warn("[stats] Could not record snapshot:", statsErr.message);
+        }
         const score = vcom.astat?.dr_era5_hist || 0;
         const higher = idx > 0 ? squads[idx - 1].astat.dr_era5_hist : null;
         const lower = idx < squads.length - 1 ? squads[idx + 1].astat.dr_era5_hist : null;

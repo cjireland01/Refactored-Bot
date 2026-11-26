@@ -1,4 +1,8 @@
 import db from "./db.js";
+import { sanitizeVehicleName } from "./vehicleNames.js";
+import { isSheetMetaActive, isOnMetaSheet } from "./metaSheet.js";
+
+export { sanitizeVehicleName };
 
 // Everything the queues need to know about vehicles lives here, so the auto
 // queue, alt queue and web API all behave the same way.
@@ -7,27 +11,12 @@ const stmts = {
   userByName: db.prepare("SELECT id, username FROM users WHERE LOWER(username) = ?"),
   altUsers: db.prepare("SELECT id, username FROM users WHERE is_alt = 1"),
   vehiclesInRange: db.prepare(
-    "SELECT vehicle_name, br FROM vehicles WHERE user_id = ? AND br BETWEEN ? AND ? ORDER BY br DESC"
+    "SELECT vehicle_name, br, country FROM vehicles WHERE user_id = ? AND br BETWEEN ? AND ? ORDER BY br DESC"
   ),
   vehiclesAll: db.prepare(
-    "SELECT vehicle_name, br FROM vehicles WHERE user_id = ? ORDER BY br DESC"
+    "SELECT vehicle_name, br, country FROM vehicles WHERE user_id = ? ORDER BY br DESC"
   ),
 };
-
-/**
- * Clean a vehicle name for display: strip accents, control characters and odd
- * symbols, then collapse whitespace.
- */
-export function sanitizeVehicleName(name) {
-  if (!name) return "";
-  return String(name)
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/\p{C}/gu, "")
-    .replace(/[^\p{L}\p{N}\s,.\-'()/:+&]/gu, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 /**
  * The BR window a squad plays in for a given BR: one full BR below it, except
@@ -40,8 +29,11 @@ export function getBRRange(currentBR) {
   return { min: Number((br - 1.0).toFixed(1)), max: br };
 }
 
+// When a meta sheet is set up, only vehicles on it are kept
 const toRows = (rows) =>
-  rows.map((r) => ({ Vehicle: r.vehicle_name, BR: r.br.toFixed(1) }));
+  rows
+    .filter((r) => !isSheetMetaActive() || isOnMetaSheet(r.country, r.vehicle_name))
+    .map((r) => ({ Vehicle: r.vehicle_name, BR: r.br.toFixed(1) }));
 
 /**
  * Vehicles for a user (matched by username, case-insensitive).
@@ -90,14 +82,17 @@ export function formatVehicleField(vehicles) {
  * Add one field per user to an embed. Discord allows 25 fields and about 6000
  * characters per embed, so extra users are skipped (and counted) instead of
  * making the whole update fail.
+ * Users with no vehicles are left out, unless emptyText is given - then they
+ * are listed with that text.
  * Returns how many users did not fit.
  */
-export function addVehicleFields(embed, userVehicleMap) {
+export function addVehicleFields(embed, userVehicleMap, { emptyText } = {}) {
   let total = 0;
   let skipped = 0;
   for (const [username, vehicles] of userVehicleMap.entries()) {
-    if (!vehicles?.length) continue;
-    const value = formatVehicleField(vehicles);
+    const hasVehicles = Boolean(vehicles?.length);
+    if (!hasVehicles && !emptyText) continue;
+    const value = hasVehicles ? formatVehicleField(vehicles) : emptyText;
     if ((embed.data.fields?.length ?? 0) >= 25 || total + value.length + username.length > 5500) {
       skipped++;
       continue;

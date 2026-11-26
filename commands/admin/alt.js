@@ -1,9 +1,6 @@
 import { SlashCommandBuilder, MessageFlags } from "discord.js";
-import db from "../../utils/db.js";
+import { findUserByName, setUserAlt } from "../../utils/users.js";
 import { updateAltTrackerEmbed } from "../../features/altQueue.js";
-
-const findUser = db.prepare("SELECT * FROM users WHERE LOWER(username) = ?");
-const setAlt = db.prepare("UPDATE users SET is_alt = ? WHERE id = ?");
 
 const reply = (interaction, content) =>
   interaction.reply({ content, flags: MessageFlags.Ephemeral });
@@ -47,11 +44,11 @@ export default {
 
     if (subcommand === "add" || subcommand === "remove") {
       const username = interaction.options.getString("username");
-      const user = findUser.get(username.toLowerCase());
+      const user = findUserByName(username);
       if (!user) return reply(interaction, `❌ No user found with username **${username}**.`);
 
       const adding = subcommand === "add";
-      setAlt.run(adding ? 1 : 0, user.id);
+      setUserAlt(user.id, adding);
       await updateAltTrackerEmbed(interaction.client);
       return reply(
         interaction,

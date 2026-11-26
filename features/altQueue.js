@@ -1,6 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import { TEXT_CHANNELS } from "../config/constants.js";
 import { getCurrentBR } from "../utils/br.js";
+import { isSheetMetaActive } from "../utils/metaSheet.js";
 import { getAltUsers, getVehiclesForUsername, addVehicleFields } from "../utils/vehicles.js";
 
 // === State ===
@@ -11,9 +12,15 @@ function buildEmbed(userVehicleMap, currentBR) {
     .setTitle(`Alt Tracker - BR: ${currentBR}`)
     .setColor("#00ff7f")
     .setTimestamp()
-    .setFooter({ text: "Request access & verify squadron membership" });
+    .setFooter({
+      text: isSheetMetaActive()
+        ? "Meta vehicles only - request access & verify squadron membership"
+        : "Request access & verify squadron membership",
+    });
 
-  const skipped = addVehicleFields(embed, userVehicleMap);
+  const skipped = addVehicleFields(embed, userVehicleMap, {
+    emptyText: isSheetMetaActive() ? "No meta vehicles" : undefined,
+  });
 
   if (!embed.data.fields?.length) {
     embed.setDescription("No active alt vehicles found for this BR range.");
