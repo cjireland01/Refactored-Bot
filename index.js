@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits, Collection } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
+require("./server/index.js");
 
 process.on("unhandledRejection", (reason, promise) => {
     console.error("Unhandled Rejection at: ", promise, " reason: ", reason);
