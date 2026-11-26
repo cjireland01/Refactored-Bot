@@ -80,7 +80,7 @@ const BRScheduler = () => {
       >
         <input
           type="number"
-          step="0.3"
+          step="any"
           placeholder="BR (e.g. 9.7)"
           value={newBR}
           onChange={(e) => setNewBR(e.target.value)}

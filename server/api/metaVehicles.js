@@ -10,7 +10,7 @@ const db = new Database(path.join(__dirname, "..", "..", "data", "botdata.db"));
 const router = express.Router();
 
 // GET all vehicles with meta info
-router.get("/api/meta-vehicles", (req, res) => {
+router.get("/", (req, res) => {
   try {
     const vehicles = db.prepare(`
       SELECT v.vehicle_name, MAX(v.br) AS br, MAX(v.country) AS country, MAX(v.move_type) AS move_type,
