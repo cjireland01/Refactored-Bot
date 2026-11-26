@@ -46,7 +46,15 @@ db.exec(`
     user_id INTEGER NOT NULL,
     br REAL NOT NULL,
     vehicle_name TEXT NOT NULL,
+    country TEXT,
+    move_type TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS vehicle_meta (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  vehicle_name TEXT UNIQUE NOT NULL,
+  is_meta INTEGER DEFAULT 0
   );
 
   CREATE INDEX IF NOT EXISTS idx_vehicles_user_br ON vehicles (user_id, br);
@@ -61,11 +69,19 @@ const insertUser = db.prepare(`
 `);
 
 const insertVehicle = db.prepare(`
-  INSERT INTO vehicles (user_id, br, vehicle_name)
-  VALUES (?, ?, ?)
+  INSERT INTO vehicles (user_id, br, vehicle_name, country, move_type)
+  VALUES (?, ?, ?, ?, ?)
   ON CONFLICT(user_id, vehicle_name)
-  DO UPDATE SET br = excluded.br
+  DO UPDATE SET br = excluded.br,
+  country = excluded.country,
+  move_type = excluded.move_type
 `);
+
+const insertMetaVehicle = db.prepare(`
+  INSERT INTO vehicle_meta (vehicle_name)
+  VALUES (?)
+  ON CONFLICT(vehicle_name) DO NOTHING
+  `);
 
 // ===== HELPERS =====
 function makeHeaders() {
@@ -267,9 +283,10 @@ function bucketByBR(masterVehicles, ownedList) {
 
 
 // ===== DATABASE SAVE =====
-function saveToDatabase(playersData) {
+function saveToDatabase(playersData, masterVehicles) {
   const tx = db.transaction(players => {
     for (const p of players) {
+      // Insert or update the user
       const user = insertUser.get(normalizeUsername(p.name), p.id);
 
       for (const [br, vehicles] of Object.entries(p.brBuckets)) {
@@ -278,8 +295,25 @@ function saveToDatabase(playersData) {
         vehicles.split(",")
           .map(v => v.trim())
           .filter(Boolean)
-          .forEach(v => {
-            insertVehicle.run(user.id, parseFloat(br), v);
+          .forEach(vehicleName => {
+
+            // 🔍 Find by name in masterVehicles
+            const masterEntry = Object.values(masterVehicles).find(
+              m => m.name === vehicleName
+            );
+
+            const country = masterEntry?.country || null;
+            const moveType = masterEntry?.unitMoveType || null;
+
+            insertVehicle.run(
+              user.id,
+              parseFloat(br),
+              vehicleName,
+              country,
+              moveType
+            );
+
+            insertMetaVehicle.run(vehicleName);
           });
       }
     }
@@ -316,7 +350,7 @@ async function main() {
       await sleep(randomDelay(1000, 2000));
     }
 
-    saveToDatabase(results);
+    saveToDatabase(results, masterVehicles);
     console.log("✅ Scraper finished successfully.");
   } catch (err) {
     console.error("❌ Error:", err);

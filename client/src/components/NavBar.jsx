@@ -32,6 +32,18 @@ export default function NavBar() {
         >
           BR Schedule
         </NavLink>
+        <NavLink
+        to="/meta-vehicles"
+        className={({ isActive }) =>
+          `transition-colors duration-300 ${
+            isActive
+              ? "text-yellow-400 font-semibold"
+              : "text-gray-300 hover:text-white"
+          }`
+        }
+        >
+        Meta Vehicles  
+        </NavLink>
       </div>
     </nav>
   );

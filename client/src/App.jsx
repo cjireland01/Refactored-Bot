@@ -1,9 +1,10 @@
 import { Routes, Route } from "react-router-dom";
+import NavBar from "./components/NavBar.jsx";
 import AutoQueue from "./components/AutoQueue.jsx";
 import AltQueue from "./components/AltQueue.jsx";
 import VcomStats from "./components/VcomStats.jsx";
 import BRScheduler from "./components/BRScheduler.jsx";
-import NavBar from "./components/NavBar.jsx";
+import MetaVehicles from "./components/MetaVehicles.jsx";
 
 export default function App() {
   return (
@@ -11,6 +12,7 @@ export default function App() {
       <NavBar />
       <main className="flex-1 p-6">
         <Routes>
+          {/* Main Dashboard */}
           <Route
             path="/"
             element={
@@ -28,6 +30,8 @@ export default function App() {
               </>
             }
           />
+
+          {/* BR Schedule Editor */}
           <Route
             path="/schedule"
             element={
@@ -36,6 +40,19 @@ export default function App() {
                   BR Schedule Editor
                 </h1>
                 <BRScheduler />
+              </>
+            }
+          />
+
+          {/* Meta Vehicles Editor */}
+          <Route
+            path="/meta-vehicles"
+            element={
+              <>
+                <h1 className="text-3xl font-bold text-center mb-6">
+                  Meta Vehicles Editor
+                </h1>
+                <MetaVehicles />
               </>
             }
           />

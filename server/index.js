@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { webState } from "./state.js";
 import statusRouter from "./api/status.js";
 import brRouter from "./api/br.js";
+import metaVehiclesRouter from "./api/metaVehicles.js";
 
 const app = express();
 const PORT = 4000;
@@ -18,6 +19,7 @@ app.use(express.json());
 // API routes
 app.use("/api/status", statusRouter);
 app.use("/api/br", brRouter);
+app.use("/api/meta-vehicles", metaVehiclesRouter);
 
 // Fallback for SPA routing
 app.get("*", (_, res) => {
