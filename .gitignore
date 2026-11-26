@@ -6,3 +6,7 @@
 
 *.log
 /node_modules/
+
+# Build output and local data
+/client/dist/
+/data/*.db-journal

@@ -1,5 +1,6 @@
 // components/MetaVehiclesManager.jsx
 import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "../api.js";
 
 /**
  * Meta Vehicles Manager
@@ -130,13 +131,12 @@ export default function MetaVehiclesManager() {
     );
 
     try {
-      const res = await fetch("/api/meta-vehicles", {
+      await apiFetch("/api/meta-vehicles", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ vehicle_name: vehicleName, is_meta: current ? 0 : 1 }),
       });
-      if (!res.ok) await fetchVehicles();
-      else await fetchVehicles();
+      // Re-read from the server either way, so the page shows what was really saved
+      await fetchVehicles();
     } catch (err) {
       console.error("Error toggling meta:", err);
       await fetchVehicles();

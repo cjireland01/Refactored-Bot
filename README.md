@@ -1,139 +1,94 @@
 # VCoM Discord Bot
 
-A custom Discord bot for **VCoM Squadron management** in *War Thunder*.
-It automates vehicle tracking, leaderboard monitoring, and server
-interaction.
+A Discord bot and web dashboard for **VCoM Squadron** management in *War Thunder*.
 
-------------------------------------------------------------------------
+## Features
 
-## ✨ Features
+- **Auto Queue** - an embed of the vehicles (in the current BR window) of members who are in the tracked voice channels. Updates the moment someone joins or leaves.
+- **Alt Tracker** - the same for registered alt accounts. Manage with `/alt add`, `/alt remove`, `/alt refresh` (Chapter Master role or higher).
+- **Leaderboard tracking** - polls the War Thunder squadron leaderboard every 60 seconds and keeps one embed up to date.
+- **Stats reports** - twice daily (18:15 and 03:15) posts squadron stats and what changed since the last report.
+- **Suggestion reactions** - adds 👍 👎 to every message in the Suggestions channel.
+- **Web dashboard** (port 4000) - live queue, alt queue, a **BR schedule** editor and a **meta vehicles** editor.
 
--   **Vehicle Tracker**
-    -   Reads a spreadsheet of registered vehicles.
-    -   Posts/updates a Discord embed with vehicles of members currently
-        in tracked voice channels.
--   **Alt Vehicle Tracker**
-    -   Separate embed for alt accounts, handled the same as main
-        vehicles.
--   **Leaderboard Tracking**
-    -   Polls the War Thunder leaderboard every 60 seconds.
-    -   Updates a persistent embed with VCoM's position, score, and
-        progress to/from nearby squadrons.
--   **Stats Reporting**
-    -   Twice daily (3:15 AM EST, 6:15 PM EST), posts detailed squadron
-        stats (wins, battles, score, etc.).
-    -   Calculates and displays differences from the previous report.
--   **Suggestion Reactions**
-    -   Automatically reacts 👍 👎 to all messages in the
-        **Suggestions** channel.
+## Project layout
 
-------------------------------------------------------------------------
+```
+index.js                 Entry point: starts the web server, loads commands/events/tasks, logs in
+deploy-commands.js       Registers slash commands with Discord
+config/constants.js      Channel IDs (from .env), leaderboard settings
+commands/admin/          Slash commands
+events/                  Discord event handlers (voice changes, interactions, suggestion reactions)
+features/                The bot's logic: autoQueue, altQueue, intelEmbed, endingLeaderboard, metaCore, sqlscraper
+tasks/                   Things that start with the bot: timers, cron jobs, startup cleanup
+utils/                   Shared code: db.js (the database + schema), br.js (current BR), time.js, vehicles.js
+server/                  Express web server and its API routes
+client/                  React dashboard (built into client/dist)
+legacy/                  Old one-off scripts, not used by the bot
+data/                    botdata.db and the stats cache (not in git)
+```
 
-## 📂 Project Structure
+How the pieces connect: `utils/db.js` is the only database connection. `utils/br.js` works out the current BR from the schedule table; both queues and the website use it. `utils/vehicles.js` holds the vehicle lookups and formatting both queues share.
 
-    project-root/
-    │
-    ├─ index.js                           # Entry point
-    ├─ config/
-    │   └─ constants.js                   # Channel IDs, squad tags, leaderboard config
-    ├─ data/
-    │   ├─ userVehicles.xlsx              # Vehicle registration data
-    │   └─ statsCache.json                # Cached stats for diff reporting
-    ├─ events/
-    │   └─ suggestionReact.js             # Auto-reactions
-    ├─ features/
-    │   ├─ autoQueue.js                   # Vehicle embed logic for normal users in waiting queue
-    │   ├─ altVehicles.js                 # Alt vehicle embed logic for predefined alt accounts
-    │   ├─ intelEmbed.js                  # Track squadron stats
-    │   ├─ endingLeaderboard.js           # Twice-daily stats reporting
-    ├─ tasks/
-    │   ├─ scheduleAutoQueue.js           # Runs autoQueue tracker every 5s
-    │   ├─ scheduleIntelEmbed.js          # Runs stats tracking every 60s
-    │   └─ scheduleFinalLeaderboard.js    # Cron tasks for twice-daily leaderboard changes
-    └─ .env                               # Bot token and environment config
+## Setup
 
-------------------------------------------------------------------------
+Requires **Node.js 20 or newer**.
 
-## ⚙️ Setup
-
-### 1. Requirements
-
--   [Node.js](https://nodejs.org/) (v18+)
--   [npm](https://www.npmjs.com/)
-
-### 2. Install Dependencies
-
-``` bash
+```
 npm install
+npm run build        # builds the web dashboard (client/dist)
 ```
 
-### 3. Configure Environment
+Create a `.env` file (see `.env.example` for every option):
 
-Create a `.env` file in the project root:
-
-``` env
+```
 BOT_TOKEN=your_discord_bot_token_here
+CLIENT_ID=your_application_id_here
 ```
 
-### 4. Configure Constants
+Register the slash commands once (and again whenever commands change):
 
-Edit `config/constants.js` with your server's channel IDs:
-
-``` js
-TEXT_CHANNELS: {
-    VEHICLE_POST: "1234567890",
-    ALT_TRACKER: "2345678901",
-    VCOM_POST: "3456789012",
-    SUGGESTIONS: "4567890123"
-},
-VOICE_CHANNELS: {
-    WAITING_ROOM: "5678901234",
-    SILENT_ROOM: "6789012345",
-    MUSIC_ROOM: "1421676295963807864"
-}
+```
+npm run deploy-commands
 ```
 
-### 5. Run the Bot
+Run it:
 
-``` bash
-node index.js
+```
+npm start
 ```
 
-------------------------------------------------------------------------
+then open http://localhost:4000.
 
-## 🔗 Bot Invite
+### Running on the Raspberry Pi
 
-Use the following scopes:
+pm2 keeps the bot running and restarts it if it crashes. Install it once, globally (it is a tool, not part of the bot's own packages):
 
--   **Scopes**:
+```
+npm install -g pm2
+pm2 start ecosystem.config.cjs
+pm2 save
+```
 
-        bot applications.commands
+### Database
 
--   **Recommended Permissions**:
+`data/botdata.db` (SQLite) is created automatically with all its tables on first start. Fill it with your squad's vehicles by running `npm run scrape`. It is not stored in git, so copy it yourself when moving the bot to another machine.
 
-    -   View Channels
-    -   Send Messages
-    -   Manage Messages
-    -   Embed Links
-    -   Read Message History
-    -   Add Reactions
+### Settings in `.env`
 
-Example:
+| Setting | What it does |
+| --- | --- |
+| `BOT_TOKEN`, `CLIENT_ID` | Discord login and slash command registration |
+| `CHANNEL_*`, `VOICE_*` | Channel IDs. Unset = the live server's IDs. Set all of them on a test server |
+| `PORT`, `HOST` | Where the dashboard listens. `HOST=127.0.0.1` makes it local-only |
+| `ADMIN_TOKEN` | When set, saving changes on the dashboard needs this token |
+| `TIMEZONE` | Zone the BR schedule switches in (05:00 local). Default `America/New_York` |
+| `CRON_TIMEZONE` | Zone for the 18:15 / 03:15 stats report. Unset = the computer's clock |
 
-    https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot%20applications.commands&permissions=274877975552
+### Bot invite
 
-------------------------------------------------------------------------
+Scopes: `bot applications.commands`. Permissions: View Channels, Send Messages, Manage Messages, Embed Links, Read Message History, Add Reactions. In the Developer Portal, also turn on the **Server Members** and **Message Content** intents.
 
-## 🛠 Development Notes
-
--   autoQueue vehicles are updated every **5 seconds**.
--   Leaderboard is updated every **60 seconds**.
--   Stats with changes are posted at **03:15** and **18:15 EST**.
--   All timing is managed with `setInterval` or `node-cron`.
--   IDs and constants are centralized in `config/constants.js`.
-
-------------------------------------------------------------------------
-
-## 📜 License
+## License
 
 Private use only. Not licensed for distribution.

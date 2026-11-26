@@ -1,13 +1,13 @@
-const { EmbedBuilder } = require("discord.js");
-const axios = require("axios");
-const { TEXT_CHANNELS, TAGS, LEADERBOARD } = require("../config/constants");
-const { getDefaultHeaders } = require("../utils/headers");
+import { EmbedBuilder } from "discord.js";
+import axios from "axios";
+import { TEXT_CHANNELS, TAGS, LEADERBOARD } from "../config/constants.js";
+import { getDefaultHeaders } from "../utils/headers.js";
 
 const nf = new Intl.NumberFormat("en-US");
 let isFetching = false;
 let lastVcomMessage = null;
 
-async function trackVcomLeaderboard(client) {
+export async function trackVcomLeaderboard(client) {
     if (isFetching) return;
     isFetching = true;
 
@@ -90,5 +90,3 @@ async function trackVcomLeaderboard(client) {
         isFetching = false;
     }
 }
-
-module.exports = { trackVcomLeaderboard };

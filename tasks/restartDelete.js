@@ -1,65 +1,57 @@
-const { TEXT_CHANNELS } = require("../config/constants");
-const { updateAltTrackerEmbed } = require("../features/altQueue");
-const { runAutoQueue } = require("../tasks/scheduleAutoQueue");
-const { getCurrentBRColumn } = require("../tasks/scheduleAutoQueue");
+import { Events } from "discord.js";
+import { TEXT_CHANNELS } from "../config/constants.js";
+import { updateAltTrackerEmbed } from "../features/altQueue.js";
+import { refreshVoiceQueue } from "../features/autoQueue.js";
 
-module.exports = {
-  async start(client) {
-    client.once("ready", async () => {
-      console.log("🧹 [RestartDelete] Starting selective cleanup...");
+// On every start, clear the bot's old messages (except the saved stats
+// reports) so the embeds don't pile up, then post fresh ones.
+const PRESERVE_TITLE = "VCoM Auto SRE Stats";
 
-      const CHANNEL_IDS = [
-        TEXT_CHANNELS.AUTOQUEUE,
-        TEXT_CHANNELS.ALTQUEUE,
-        TEXT_CHANNELS.INTEL,
-      ];
+export function start(client) {
+  client.once(Events.ClientReady, async () => {
+    console.log("🧹 [RestartDelete] Starting selective cleanup...");
 
-      for (const id of CHANNEL_IDS) {
-        try {
-          const channel = await client.channels.fetch(id);
-          if (!channel?.isTextBased()) continue;
+    const channelIds = [TEXT_CHANNELS.AUTOQUEUE, TEXT_CHANNELS.ALTQUEUE, TEXT_CHANNELS.INTEL];
 
-          console.log(`[RestartDelete] Checking ${channel.name}...`);
-          const messages = await channel.messages.fetch({ limit: 50 });
-          const botMessages = messages.filter(m => m.author.id === client.user.id);
+    for (const id of channelIds) {
+      try {
+        const channel = await client.channels.fetch(id);
+        if (!channel?.isTextBased()) continue;
 
-          for (const [, msg] of botMessages) {
-            const embed = msg.embeds?.[0];
-            const title = embed?.title?.trim();
+        console.log(`[RestartDelete] Checking ${channel.name}...`);
+        const messages = await channel.messages.fetch({ limit: 50 });
+        const botMessages = messages.filter((m) => m.author.id === client.user.id);
 
-            if (title && title.includes("VCoM Auto SRE Stats")) {
-              console.log(`[RestartDelete] Preserving Intel message: "${title}"`);
-              continue;
-            }
-
-            await msg.delete().catch(() => {});
+        for (const [, msg] of botMessages) {
+          const title = msg.embeds?.[0]?.title?.trim();
+          if (title && title.includes(PRESERVE_TITLE)) {
+            console.log(`[RestartDelete] Preserving Intel message: "${title}"`);
+            continue;
           }
-
-          console.log(`[RestartDelete] Processed ${botMessages.size} bot messages in ${channel.name}`);
-        } catch (err) {
-          console.error(`[RestartDelete] Failed to clean channel ${id}:`, err.message);
+          await msg.delete().catch(() => {});
         }
-      }
 
-      console.log("✅ [RestartDelete] Cleanup complete.");
-
-      // Post altQueue first
-      try {
-        console.log("📋 [RestartDelete] Regenerating AltQueue embed...");
-        await updateAltTrackerEmbed(client, getCurrentBRColumn);
-        console.log("✅ [RestartDelete] AltQueue embed regenerated.");
+        console.log(`[RestartDelete] Processed ${botMessages.size} bot messages in ${channel.name}`);
       } catch (err) {
-        console.error("❌ [RestartDelete] Failed to regenerate AltQueue embed:", err);
+        console.error(`[RestartDelete] Failed to clean channel ${id}:`, err.message);
       }
+    }
 
-      // Post autoQueue second
-      try {
-        console.log("📋 [RestartDelete] Regenerating AutoQueue embed...");
-        await runAutoQueue(client);
-        console.log("✅ [RestartDelete] AutoQueue embed regenerated.");
-      } catch (err) {
-        console.error("❌ [RestartDelete] Failed to regenerate AutoQueue embed:", err);
-      }
-    });
-  },
-};
+    console.log("✅ [RestartDelete] Cleanup complete.");
+
+    // Alt tracker first, then the auto queue
+    try {
+      await updateAltTrackerEmbed(client);
+      console.log("✅ [RestartDelete] AltQueue embed regenerated.");
+    } catch (err) {
+      console.error("❌ [RestartDelete] Failed to regenerate AltQueue embed:", err);
+    }
+
+    try {
+      await refreshVoiceQueue(client);
+      console.log("✅ [RestartDelete] AutoQueue embed regenerated.");
+    } catch (err) {
+      console.error("❌ [RestartDelete] Failed to regenerate AutoQueue embed:", err);
+    }
+  });
+}

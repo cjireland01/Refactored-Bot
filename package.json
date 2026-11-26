@@ -1,11 +1,17 @@
 {
   "name": "botmain",
   "version": "1.0.0",
-  "description": "",
+  "description": "VCoM War Thunder squadron Discord bot and web dashboard",
+  "type": "module",
   "main": "index.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node index.js",
+    "build": "npm --prefix client install && npm --prefix client run build",
+    "deploy-commands": "node deploy-commands.js",
+    "scrape": "node features/sqlscraper.js"
   },
   "keywords": [],
   "author": "",
@@ -16,13 +22,6 @@
     "discord.js": "^14.22.1",
     "dotenv": "^17.2.2",
     "express": "^4.21.2",
-    "fetch": "^1.1.0",
-    "fs": "^0.0.1-security",
-    "node-cron": "^4.2.1",
-    "node-fetch": "^3.3.2",
-    "path": "^0.12.7",
-    "pm2": "^6.0.13",
-    "sqlite3": "^5.1.7",
-    "xlsx": "^0.18.5"
+    "node-cron": "^4.2.1"
   }
 }

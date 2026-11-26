@@ -1,10 +1,9 @@
-const { trackVcomLeaderboard } = require("../features/intelEmbed");
-const { LEADERBOARD } = require("../config/constants");
+import { Events } from "discord.js";
+import { trackVcomLeaderboard } from "../features/intelEmbed.js";
+import { LEADERBOARD } from "../config/constants.js";
 
-module.exports = {
-    start(client) {
-        client.once("clientReady", () => {
-            setInterval(() => trackVcomLeaderboard(client), LEADERBOARD.POLL_INTERVAL);
-        });
-    }
-};
+export function start(client) {
+    client.once(Events.ClientReady, () => {
+        setInterval(() => trackVcomLeaderboard(client), LEADERBOARD.POLL_INTERVAL);
+    });
+}

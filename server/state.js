@@ -1,15 +1,9 @@
-import { getRemainingTime } from "./utils/schedule.js";
-
+// Live data the bot shares with the website.
+// (The current BR and its countdown are computed fresh on each request.)
 export const webState = {
-  currentBR: "",
-  brEndsIn: "",
   voiceUsers: [],
-  vcomStats: {}
 };
 
-export function updateWebState({ currentBR, voiceUsers, vcomStats }) {
-  webState.currentBR = currentBR;
-  webState.brEndsIn = getRemainingTime(currentBR);
-  webState.voiceUsers = voiceUsers || [];
-  webState.vcomStats = vcomStats || {};
+export function setVoiceUsers(users) {
+  webState.voiceUsers = users || [];
 }
