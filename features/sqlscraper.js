@@ -1,17 +1,19 @@
-import fetch from "node-fetch";
-import { fileURLToPath } from "url";
-import fs from "fs";
-import readline from "readline";
-import * as dotenv from "dotenv";
-import Database from "better-sqlite3";
+// Pulls the squad's vehicle lists from statshark.net into the bot's database.
+// Run it by hand from the project folder:   node features/sqlscraper.js
+// (or:  npm run scrape)
 import path from "path";
+import readline from "readline";
+import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+import db from "../utils/db.js";
+import { ROOT_DIR } from "../utils/paths.js";
 
-dotenv.config( {path: "/home/cireland/Refactored-Bot/.env"} );
+dotenv.config({ path: path.join(ROOT_DIR, ".env") });
 
 // ===== CONFIGURATION =====
 const SQUAD_ID = "1125864";
 let TURNSTILE_TOKEN = process.env.TURNSTILE_TOKEN;
-const PLAYER_LIMIT = process.env.PLAYER_LIMIT;
+const PLAYER_LIMIT = Number(process.env.PLAYER_LIMIT) || 0;
 const API_BASE = "https://statshark.net";
 
 const MIN_GAMES = 20;
@@ -24,43 +26,7 @@ const BR_STEPS = [
   13.0, 13.3, 13.7, 14.0, 14.3
 ];
 
-// ===== DATABASE SETUP =====
-const __fileName = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__fileName);
-
-const dbPath = path.join(__dirname, "..", "data", "botdata.db");
-const db = new Database(dbPath);
-
-db.exec(`
-  PRAGMA foreign_keys = ON;
-
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL,
-    member_id TEXT UNIQUE,
-    is_alt INTEGER DEFAULT 0
-  );
-
-  CREATE TABLE IF NOT EXISTS vehicles (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    br REAL NOT NULL,
-    vehicle_name TEXT NOT NULL,
-    country TEXT,
-    move_type TEXT,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-  );
-
-  CREATE TABLE IF NOT EXISTS vehicle_meta (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  vehicle_name TEXT UNIQUE NOT NULL,
-  is_meta INTEGER DEFAULT 0
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_vehicles_user_br ON vehicles (user_id, br);
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_user_vehicle_unique ON vehicles (user_id, vehicle_name);
-`);
-
+// ===== PREPARED STATEMENTS (the tables are created by utils/db.js) =====
 const insertUser = db.prepare(`
   INSERT INTO users (username, member_id)
   VALUES (?, ?)
@@ -81,7 +47,7 @@ const insertMetaVehicle = db.prepare(`
   INSERT INTO vehicle_meta (vehicle_name)
   VALUES (?)
   ON CONFLICT(vehicle_name) DO NOTHING
-  `);
+`);
 
 // ===== HELPERS =====
 function makeHeaders() {
@@ -320,7 +286,7 @@ function saveToDatabase(playersData, masterVehicles) {
   });
 
   tx(playersData);
-  console.log(`✅ Saved/updated ${playersData.length} players to database at ${dbPath}`);
+  console.log(`✅ Saved/updated ${playersData.length} players to database at ${db.name}`);
 }
 
 
@@ -354,9 +320,10 @@ async function main() {
     console.log("✅ Scraper finished successfully.");
   } catch (err) {
     console.error("❌ Error:", err);
-  } finally {
-    db.close();
   }
 }
 
-main();
+// Only run when started directly (not when imported)
+if (path.resolve(process.argv[1] || "") === fileURLToPath(import.meta.url)) {
+  main();
+}

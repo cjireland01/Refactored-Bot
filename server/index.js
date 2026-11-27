@@ -1,31 +1,18 @@
-import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-import { webState } from "./state.js";
-import statusRouter from "./api/status.js";
-import brRouter from "./api/br.js";
-import metaVehiclesRouter from "./api/metaVehicles.js";
+import { createApp } from "./app.js";
+import { authConfig } from "./auth/config.js";
 
-const app = express();
-const PORT = 4000;
+const PORT = Number(process.env.PORT) || 4000;
+const HOST = process.env.HOST?.trim() || undefined; // e.g. 127.0.0.1 = this computer only
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Serve React build
-app.use(express.static(path.join(__dirname, "../client/dist")));
-app.use(express.json());
-
-// API routes
-app.use("/api/status", statusRouter);
-app.use("/api/br", brRouter);
-app.use("/api/meta-vehicles", metaVehiclesRouter);
-
-// Fallback for SPA routing
-app.get("*", (_, res) => {
-  res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+const server = createApp().listen(PORT, HOST, () => {
+  console.log(`🌐 Web server running at http://${HOST ?? "localhost"}:${PORT}`);
+  if (authConfig().enabled) {
+    console.log(`🔐 Discord login is on (${authConfig().publicUrl}).`);
+  } else if (!process.env.ADMIN_TOKEN?.trim()) {
+    console.warn("⚠️  ADMIN_TOKEN is not set: anyone who can reach the dashboard can edit it.");
+  }
 });
 
-app.listen(PORT, () => {
-  console.log(`🌐 Web server running at http://localhost:${PORT}`);
+server.on("error", (err) => {
+  console.error(`🌐 Web server failed to start on port ${PORT}:`, err.message);
 });

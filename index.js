@@ -1,16 +1,23 @@
-const { Client, GatewayIntentBits, Collection } = require("discord.js");
-const fs = require("fs");
-const path = require("path");
-require("dotenv").config();
-require("./server/index.js");
+import "dotenv/config";
+import fs from "fs";
+import path from "path";
+import { pathToFileURL } from "url";
+import { Client, GatewayIntentBits, Collection } from "discord.js";
+import { ROOT_DIR } from "./utils/paths.js";
+import "./server/index.js"; // web dashboard
 
 process.on("unhandledRejection", (reason, promise) => {
     console.error("Unhandled Rejection at: ", promise, " reason: ", reason);
-})
+});
 
 process.on("uncaughtException", (err) => {
     console.error("Uncaught Exception thrown: ", err);
-})
+});
+
+if (!process.env.BOT_TOKEN) {
+    console.error("BOT_TOKEN is missing. Copy .env.example to .env and fill it in.");
+    process.exit(1);
+}
 
 const client = new Client({
     intents: [
@@ -22,48 +29,42 @@ const client = new Client({
     ],
 });
 
+// Import every .js file in a folder (optionally one level of subfolders)
+async function importAll(folder, { recursive = false } = {}) {
+    const dir = path.join(ROOT_DIR, folder);
+    if (!fs.existsSync(dir)) return [];
+
+    const files = [];
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory() && recursive) {
+            for (const f of fs.readdirSync(full).filter((n) => n.endsWith(".js"))) files.push(path.join(full, f));
+        } else if (entry.isFile() && entry.name.endsWith(".js")) {
+            files.push(full);
+        }
+    }
+    return Promise.all(files.map((f) => import(pathToFileURL(f).href)));
+}
+
+// ---- slash commands ----
 client.commands = new Collection();
-
-// ---- load slash commands into client.commands ----
-const commandsPath = path.join(__dirname, "commands");
-if (fs.existsSync(commandsPath)) {
-  const commandFolders = fs.readdirSync(commandsPath).filter(f => fs.statSync(path.join(commandsPath, f)).isDirectory());
-  for (const folder of commandFolders) {
-    const folderPath = path.join(commandsPath, folder);
-    const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith(".js"));
-    for (const file of commandFiles) {
-      const filePath = path.join(folderPath, file);
-      const command = require(filePath);
-      if (command?.data?.name) {
-        client.commands.set(command.data.name, command);
-      }
-    }
-  }
+for (const mod of await importAll("commands", { recursive: true })) {
+    const command = mod.default;
+    if (command?.data?.name) client.commands.set(command.data.name, command);
 }
 
-
-// Load events dynamically
-const eventsPath = path.join(__dirname, "events");
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith(".js"));
-
-for (const file of eventFiles) {
-    const event = require(path.join(eventsPath, file));
-    if (event.once) {
-        client.once(event.name, (...args) => event.execute(...args, client));
-    } else {
-        client.on(event.name, (...args) => event.execute(...args, client));
-    }
+// ---- events ----
+for (const mod of await importAll("events")) {
+    const event = mod.default;
+    if (!event?.name) continue;
+    const handler = (...args) => event.execute(...args, client);
+    if (event.once) client.once(event.name, handler);
+    else client.on(event.name, handler);
 }
 
-// Load tasks
-const tasksPath = path.join(__dirname, "tasks");
-const taskFiles = fs.readdirSync(tasksPath).filter(file => file.endsWith(".js"));
-
-for (const file of taskFiles) {
-    const task = require(path.join(tasksPath, file));
-    if (typeof task.start === "function") {
-        task.start(client);
-    }
+// ---- scheduled / startup tasks ----
+for (const mod of await importAll("tasks")) {
+    if (typeof mod.start === "function") mod.start(client);
 }
 
 client.login(process.env.BOT_TOKEN.trim());

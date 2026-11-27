@@ -1,57 +1,46 @@
-import Database from "better-sqlite3";
-import path from "path";
-import { fileURLToPath } from "url";
+import db from "../utils/db.js";
 
-const __fileName = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__fileName);
-const dbPath = path.join(__dirname, "..", "data", "botdata.db");
-const db = new Database(dbPath);
+const upsertMeta = db.prepare(`
+  INSERT INTO vehicle_meta (vehicle_name, is_meta)
+  VALUES (?, ?)
+  ON CONFLICT(vehicle_name) DO UPDATE SET is_meta = excluded.is_meta
+`);
+const selectMeta = db.prepare("SELECT is_meta FROM vehicle_meta WHERE vehicle_name = ?");
+const selectAllMeta = db.prepare("SELECT vehicle_name FROM vehicle_meta WHERE is_meta = 1");
+const selectVehicles = db.prepare(`
+  SELECT v.vehicle_name, MAX(v.br) AS br, MAX(v.country) AS country, MAX(v.move_type) AS move_type,
+         COALESCE(vm.is_meta, 0) AS is_meta
+  FROM vehicles v
+  LEFT JOIN vehicle_meta vm ON vm.vehicle_name = v.vehicle_name
+  GROUP BY v.vehicle_name
+  ORDER BY v.vehicle_name
+`);
 
-// ===== MARK A VEHICLE AS META =====
-export function setMeta(vehicleName) {
-  const stmt = db.prepare(`
-    INSERT INTO vehicle_meta (vehicle_name, is_meta)
-    VALUES (?, 1)
-    ON CONFLICT(vehicle_name) DO UPDATE SET is_meta = 1
-  `);
-  stmt.run(vehicleName);
+/** Mark (true) or unmark (false) a vehicle as meta */
+export function setMetaFlag(vehicleName, isMeta) {
+  upsertMeta.run(vehicleName, isMeta ? 1 : 0);
 }
 
-// ===== UNMARK A VEHICLE AS META =====
-export function unsetMeta(vehicleName) {
-  const stmt = db.prepare(`
-    INSERT INTO vehicle_meta (vehicle_name, is_meta)
-    VALUES (?, 0)
-    ON CONFLICT(vehicle_name) DO UPDATE SET is_meta = 0
-  `);
-  stmt.run(vehicleName);
-}
+export const setMeta = (vehicleName) => setMetaFlag(vehicleName, true);
+export const unsetMeta = (vehicleName) => setMetaFlag(vehicleName, false);
 
-// ===== TOGGLE META =====
+/** Flip a vehicle's meta flag (unknown vehicles become meta) */
 export function toggleMeta(vehicleName) {
-  const current = db.prepare(`SELECT is_meta FROM vehicle_meta WHERE vehicle_name = ?`)
-                    .get(vehicleName);
-
-  if (current) {
-    const newValue = current.is_meta ? 0 : 1;
-    db.prepare(`UPDATE vehicle_meta SET is_meta = ? WHERE vehicle_name = ?`)
-      .run(newValue, vehicleName);
-  } else {
-    // If vehicle doesn't exist yet, mark as meta by default
-    setMeta(vehicleName);
-  }
+  const current = selectMeta.get(vehicleName);
+  setMetaFlag(vehicleName, current ? !current.is_meta : true);
 }
 
-// ===== FETCH ALL META VEHICLES =====
+/** Names of all vehicles currently marked as meta */
 export function getAllMetaVehicles() {
-  return db.prepare(`SELECT vehicle_name FROM vehicle_meta WHERE is_meta = 1`)
-           .all()
-           .map(r => r.vehicle_name);
+  return selectAllMeta.all().map((r) => r.vehicle_name);
 }
 
-// ===== FETCH META STATUS OF A VEHICLE =====
 export function isMeta(vehicleName) {
-  const row = db.prepare(`SELECT is_meta FROM vehicle_meta WHERE vehicle_name = ?`)
-                .get(vehicleName);
+  const row = selectMeta.get(vehicleName);
   return row ? Boolean(row.is_meta) : false;
+}
+
+/** Every known vehicle with its BR, country, type and meta flag */
+export function listVehiclesWithMeta() {
+  return selectVehicles.all();
 }

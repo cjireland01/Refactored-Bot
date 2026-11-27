@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { apiJson } from "../api.js";
 
 const BRScheduler = () => {
   const [schedule, setSchedule] = useState([]);
@@ -13,8 +13,7 @@ const BRScheduler = () => {
   const fetchSchedule = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/api/br");
-      setSchedule(res.data);
+      setSchedule(await apiJson("/api/br"));
       setError("");
     } catch (err) {
       console.error("[BRScheduler] Fetch error:", err);
@@ -34,10 +33,9 @@ const BRScheduler = () => {
     if (!newBR || !start) return;
 
     try {
-      await axios.post("/api/br", {
-        id: editingId,
-        br: parseFloat(newBR),
-        start,
+      await apiJson("/api/br", {
+        method: "POST",
+        body: JSON.stringify({ id: editingId, br: parseFloat(newBR), start }),
       });
       setNewBR("");
       setStart("");
@@ -60,7 +58,7 @@ const BRScheduler = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this entry?")) return;
     try {
-      await axios.delete(`/api/br/${id}`);
+      await apiJson(`/api/br/${id}`, { method: "DELETE" });
       fetchSchedule();
     } catch (err) {
       console.error("[BRScheduler] Delete error:", err);
@@ -80,7 +78,7 @@ const BRScheduler = () => {
       >
         <input
           type="number"
-          step="0.3"
+          step="any"
           placeholder="BR (e.g. 9.7)"
           value={newBR}
           onChange={(e) => setNewBR(e.target.value)}
