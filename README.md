@@ -77,6 +77,10 @@ With login on, nobody can see the dashboard without signing in with Discord. Peo
 
 Before opening it to the internet, serve it over **HTTPS** (a Cloudflare Tunnel is the simplest safe way: no router changes) and set `PUBLIC_URL` to the `https://` address. Keep `HOST=127.0.0.1` so only the tunnel can reach the bot.
 
+### Rate limiting
+
+Each visitor (by IP address) is limited to 300 dashboard requests a minute, 30 login attempts per 15 minutes, and 300 page loads a minute. An open dashboard tab uses about 15 requests a minute. If the bot sits behind a tunnel or proxy, set `TRUST_PROXY=1` so visitors are counted separately.
+
 ### Tests
 
 ```
